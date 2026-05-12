@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Build your own browser game with our drag-and-drop creator. Publish globally in seconds.">
+<meta name="theme-color" content="#c8ff00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<meta property="og:title" content="Game Creator — GoGo Games">
+<meta property="og:description" content="Build your own browser game with our drag-and-drop creator. Publish globally in seconds.">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Creator — GoGo Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c:#00ffe1;--p:#ff2d6b;--y:#ffd600;--g:#00ff88;
+  --bg:#050508;--bg2:#0a0a12;--bg3:#0f0f1a;--bg4:#141420;
+  --glass:rgba(255,255,255,0.03);--glass2:rgba(255,255,255,0.06);
+  --border:rgba(0,255,225,0.12);--border2:rgba(0,255,225,0.28);
+  --w:#fff;--muted:#5a6a7a;--text:#c8d8e8;
+  --fd:'Bebas Neue',cursive;--fb:'Syne',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--w);font-family:var(--fb);overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{height:54px;background:rgba(5,5,8,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;flex-shrink:0;backdrop-filter:blur(20px);z-index:100;}
+.tb-left{display:flex;align-items:center;gap:1rem;}
+.tb-logo{font-family:var(--fd);font-size:1.3rem;letter-spacing:2px;background:linear-gradient(90deg,var(--c),#7fffee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;}
+.tb-sep{color:var(--muted);font-size:1rem;}
+.game-name-input{background:transparent;border:none;outline:none;color:var(--w);font-family:var(--fd);font-size:1.2rem;letter-spacing:2px;width:200px;}
+.game-name-input::placeholder{color:var(--muted);}
+.tb-right{display:flex;align-items:center;gap:.6rem;}
+.btn{font-family:var(--fm);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;border-radius:7px;padding:.48rem 1.1rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;}
+.btn-o{background:transparent;border:1px solid var(--border2);color:var(--text);}
+.btn-o:hover{border-color:var(--c);color:var(--c);}
+.btn-c{background:var(--c);color:var(--bg);}
+.btn-c:hover{background:#33fff0;transform:translateY(-1px);}
+.btn-p{background:var(--p);color:var(--w);}
+.btn-p:hover{background:#ff5585;transform:translateY(-1px);}
+.btn-g{background:var(--g);color:var(--bg);}
+.btn-g:hover{background:#33ffaa;transform:translateY(-1px);}
+.unsaved-dot{width:7px;height:7px;border-radius:50%;background:var(--y);box-shadow:0 0 6px var(--y);flex-shrink:0;}
+
+/* MAIN LAYOUT */
+.creator-layout{display:flex;flex:1;overflow:hidden;}
+
+/* LEFT PANEL — TOOLS */
+.tools-panel{width:220px;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.panel-title{font-family:var(--fm);font-size:.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:.8rem 1rem .5rem;border-bottom:1px solid var(--border);}
+
+.tool-section{padding:.6rem;}
+.tool-section-label{font-family:var(--fm);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;padding:0 .3rem;}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.8rem;}
+.tool-btn{background:var(--glass2);border:1px solid var(--border);border-radius:8px;padding:.6rem .4rem;text-align:center;cursor:pointer;transition:all .2s;font-size:.7rem;color:var(--text);font-family:var(--fm);}
+.tool-btn:hover,.tool-btn.active{border-color:var(--c);color:var(--c);background:rgba(0,255,225,.06);}
+.tool-btn .ti{font-size:1.4rem;display:block;margin-bottom:.25rem;}
+
+/* Object list */
+.obj-list{flex:1;overflow-y:auto;}
+.obj-item{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.03);font-size:.82rem;}
+.obj-item:hover{background:var(--glass2);}
+.obj-item.sel{background:rgba(0,255,225,.06);border-left:2px solid var(--c);}
+.obj-icon{font-size:1.1rem;flex-shrink:0;}
+.obj-name{flex:1;font-family:var(--fm);font-size:.72rem;color:var(--text);}
+.obj-del{color:var(--muted);font-size:.8rem;cursor:pointer;transition:color .2s;padding:.2rem;}
+.obj-del:hover{color:var(--p);}
+
+/* CENTER — CANVAS */
+.canvas-area{flex:1;display:flex;flex-direction:column;background:var(--bg3);overflow:hidden;position:relative;}
+.canvas-toolbar{height:40px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem;padding:0 1rem;flex-shrink:0;}
+.ctool{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.ctool:hover,.ctool.on{border-color:var(--c);color:var(--c);background:rgba(0,255,225,.06);}
+.zoom-label{font-family:var(--fm);font-size:.65rem;color:var(--muted);margin-left:.3rem;}
+.canvas-wrap{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:2rem;}
+#game-canvas{background:#111;border:2px solid var(--border);border-radius:4px;cursor:crosshair;image-rendering:pixelated;box-shadow:0 0 60px rgba(0,0,0,.8),0 0 20px rgba(0,255,225,.05);}
+.canvas-hint{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);font-family:var(--fm);font-size:.62rem;letter-spacing:2px;color:var(--muted);background:var(--bg2);padding:.3rem .8rem;border-radius:100px;border:1px solid var(--border);pointer-events:none;}
+
+/* RIGHT PANEL — PROPERTIES */
+.props-panel{width:240px;background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0;}
+.prop-section{padding:.8rem 1rem;border-bottom:1px solid var(--border);}
+.prop-label{font-family:var(--fm);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;}
+.prop-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;}
+.prop-key{font-family:var(--fm);font-size:.68rem;color:var(--text);flex-shrink:0;}
+.prop-val{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:.3rem .6rem;color:var(--w);font-family:var(--fm);font-size:.7rem;outline:none;width:90px;text-align:right;}
+.prop-val:focus{border-color:var(--c);}
+.prop-color{width:32px;height:26px;border-radius:6px;border:1px solid var(--border);cursor:pointer;padding:0;background:none;}
+select.prop-val{cursor:pointer;}
+
+/* GAME SETTINGS tabs */
+.tab-row{display:flex;gap:.3rem;margin-bottom:.8rem;}
+.ptab{flex:1;padding:.35rem;text-align:center;font-family:var(--fm);font-size:.6rem;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
+.ptab.on{border-color:var(--c);color:var(--c);background:rgba(0,255,225,.05);}
+
+/* CODE EDITOR (bottom drawer) */
+.code-drawer{height:0;background:var(--bg4);border-top:1px solid var(--border);overflow:hidden;transition:height .3s ease;flex-shrink:0;}
+.code-drawer.open{height:220px;}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem;border-bottom:1px solid var(--border);}
+.code-header span{font-family:var(--fm);font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--c);}
+#code-editor{width:100%;height:calc(220px - 38px);background:transparent;border:none;outline:none;color:#e6e6e6;font-family:var(--fm);font-size:.8rem;padding:.8rem 1rem;resize:none;line-height:1.6;}
+
+/* PREVIEW OVERLAY */
+.preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;flex-direction:column;}
+.preview-overlay.on{display:flex;}
+.preview-header{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.5rem;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.preview-header h3{font-family:var(--fd);font-size:1.4rem;letter-spacing:2px;color:var(--c);}
+.preview-body{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#preview-canvas{background:#111;border:2px solid var(--border);border-radius:4px;max-width:100%;max-height:100%;}
+
+/* PUBLISH MODAL */
+.pub-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:300;align-items:center;justify-content:center;}
+.pub-overlay.on{display:flex;}
+.pub-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2.5rem;max-width:480px;width:90%;animation:scaleIn .25s ease;}
+.pub-box h2{font-family:var(--fd);font-size:2rem;letter-spacing:1px;margin-bottom:.4rem;}
+.pub-box .sub{color:var(--muted);font-size:.85rem;margin-bottom:1.8rem;}
+.pub-steps{display:flex;flex-direction:column;gap:.8rem;margin-bottom:1.8rem;}
+.pstep{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;background:var(--glass2);border:1px solid var(--border);border-radius:10px;}
+.pstep-num{width:28px;height:28px;border-radius:50%;background:var(--c);color:var(--bg);font-family:var(--fd);font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pstep.done .pstep-num{background:var(--g);}
+.pstep-text{font-size:.88rem;}
+.pstep-text strong{color:var(--w);display:block;margin-bottom:.15rem;font-size:.9rem;}
+.pstep-text span{color:var(--muted);font-size:.8rem;}
+.pub-url{background:rgba(0,255,225,.05);border:1px solid rgba(0,255,225,.25);border-radius:10px;padding:.8rem 1rem;font-family:var(--fm);font-size:.82rem;color:var(--c);word-break:break-all;margin-bottom:1.5rem;display:none;}
+.pub-url.on{display:block;}
+.share-row{display:flex;gap:.7rem;flex-wrap:wrap;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--c);color:var(--w);padding:.8rem 1.3rem;border-radius:10px;font-size:.8rem;font-family:var(--fm);z-index:999;opacity:0;transform:translateY(12px) scale(.97);transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:280px;letter-spacing:.5px;}
+.toast.on{opacity:1;transform:translateY(0) scale(1);}
+.toast.err{border-color:var(--p);}
+
+@keyframes scaleIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <a class="tb-logo" href="index.html">GoGo</a>
+    <span class="tb-sep">/</span>
+    <input class="game-name-input" id="game-name" placeholder="Untitled Game" maxlength="40">
+    <span class="unsaved-dot" id="unsaved" style="display:none" title="Unsaved changes"></span>
+  </div>
+  <div class="tb-right">
+    <button class="btn btn-o" onclick="openCodeDrawer()">⌨ Code</button>
+    <button class="btn btn-o" onclick="openPreview()">▶ Preview</button>
+    <button class="btn btn-c" onclick="saveGame()">💾 Save</button>
+    <button class="btn btn-g" onclick="openPublish()">🚀 Publish</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="creator-layout">
+
+  <!-- LEFT: TOOLS + OBJECTS -->
+  <div class="tools-panel">
+    <div class="panel-title">🛠 Tools</div>
+    <div class="tool-section">
+      <div class="tool-section-label">Add Objects</div>
+      <div class="tool-grid">
+        <div class="tool-btn" onclick="addObject('player')"><span class="ti">🧑</span>Player</div>
+        <div class="tool-btn" onclick="addObject('enemy')"><span class="ti">👾</span>Enemy</div>
+        <div class="tool-btn" onclick="addObject('platform')"><span class="ti">▬</span>Platform</div>
+        <div class="tool-btn" onclick="addObject('coin')"><span class="ti">🪙</span>Coin</div>
+        <div class="tool-btn" onclick="addObject('wall')"><span class="ti">🧱</span>Wall</div>
+        <div class="tool-btn" onclick="addObject('spike')"><span class="ti">⚠️</span>Spike</div>
+        <div class="tool-btn" onclick="addObject('door')"><span class="ti">🚪</span>Door</div>
+        <div class="tool-btn" onclick="addObject('key')"><span class="ti">🔑</span>Key</div>
+        <div class="tool-btn" onclick="addObject('powerup')"><span class="ti">⭐</span>Power Up</div>
+        <div class="tool-btn" onclick="addObject('checkpoint')"><span class="ti">🏁</span>Checkpoint</div>
+        <div class="tool-btn" onclick="addObject('text')"><span class="ti">📝</span>Text</div>
+        <div class="tool-btn" onclick="addObject('bg')"><span class="ti">🌌</span>Background</div>
+      </div>
+      <div class="tool-section-label">Draw Tools</div>
+      <div class="tool-grid">
+        <div class="tool-btn active" id="tool-select" onclick="setTool('select')"><span class="ti">↖</span>Select</div>
+        <div class="tool-btn" id="tool-move" onclick="setTool('move')"><span class="ti">✥</span>Move</div>
+        <div class="tool-btn" id="tool-draw" onclick="setTool('draw')"><span class="ti">✏️</span>Draw</div>
+        <div class="tool-btn" id="tool-erase" onclick="setTool('erase')"><span class="ti">🗑</span>Erase</div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:.3rem">📦 Objects (<span id="obj-count">0</span>)</div>
+    <div class="obj-list" id="obj-list"></div>
+
+    <div style="padding:.8rem">
+      <button class="btn btn-o" style="width:100%;justify-content:center;font-size:.65rem" onclick="clearAll()">🗑 Clear All</button>
+    </div>
+  </div>
+
+  <!-- CENTER: CANVAS -->
+  <div class="canvas-area">
+    <div class="canvas-toolbar">
+      <button class="ctool on" id="tool-sel-btn" onclick="setTool('select')" title="Select">↖</button>
+      <button class="ctool" id="tool-mov-btn" onclick="setTool('move')" title="Move">✥</button>
+      <button class="ctool" id="tool-drw-btn" onclick="setTool('draw')" title="Draw">✏</button>
+      <button class="ctool" id="tool-ers-btn" onclick="setTool('erase')" title="Erase">⊗</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 .3rem"></div>
+      <button class="ctool" onclick="zoomIn()" title="Zoom In">+</button>
+      <span class="zoom-label" id="zoom-label">100%</span>
+      <button class="ctool" onclick="zoomOut()" title="Zoom Out">−</button>
+      <button class="ctool" onclick="resetZoom()" title="Reset">⊙</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 .3rem"></div>
+      <button class="ctool" onclick="undo()" title="Undo">↩</button>
+      <button class="ctool" onclick="redo()" title="Redo">↪</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 .3rem"></div>
+      <button class="ctool" onclick="toggleGrid()" title="Toggle Grid" id="grid-btn">⊞</button>
+      <span style="font-family:var(--fm);font-size:.62rem;color:var(--muted);margin-left:auto">
+        Level: <select onchange="changeLevel(this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--w);font-family:var(--fm);font-size:.65rem;padding:.1rem .3rem;outline:none;" id="level-select">
+          <option>Level 1</option><option>Level 2</option><option>Level 3</option><option>Level 4</option><option>Level 5</option>
+        </select>
+        &nbsp;
+        <button class="btn btn-o" style="font-size:.6rem;padding:.25rem .7rem" onclick="addLevel()">+ Level</button>
+      </span>
+    </div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="game-canvas" width="800" height="500"></canvas>
+    </div>
+    <div class="canvas-hint" id="canvas-hint">Click canvas to add selected object · Drag to move</div>
+
+    <!-- CODE DRAWER -->
+    <div class="code-drawer" id="code-drawer">
+      <div class="code-header">
+        <span>⌨ Game Logic — JavaScript</span>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-c" style="font-size:.65rem;padding:.3rem .7rem" onclick="runCode()">▶ Run</button>
+          <button class="btn btn-o" style="font-size:.65rem;padding:.3rem .7rem" onclick="closeCodeDrawer()">✕</button>
+        </div>
+      </div>
+      <textarea id="code-editor" spellcheck="false">// GoGo Games — Custom Logic
+// Available variables: player, enemies, coins, platforms
+// Available functions: movePlayer(dx, dy), spawnEnemy(x, y), addScore(pts)
+
+// Example: make enemies move left/right
+function onUpdate(dt) {
+  enemies.forEach(e => {
+    e.vx = e.vx || 1;
+    e.x += e.vx;
+    if (e.x > 750 || e.x < 10) e.vx *= -1;
+  });
+}
+
+// Example: collect coin = +10 points
+function onCollect(type) {
+  if (type === 'coin') addScore(10);
+  if (type === 'powerup') addScore(50);
+}
+</textarea>
+    </div>
+  </div>
+
+  <!-- RIGHT: PROPERTIES -->
+  <div class="props-panel">
+    <div class="panel-title">⚙ Properties</div>
+
+    <!-- Game Settings -->
+    <div class="prop-section">
+      <div class="prop-label">Game Settings</div>
+      <div class="tab-row">
+        <button class="ptab on" onclick="setPropTab('game',this)">Game</button>
+        <button class="ptab" onclick="setPropTab('physics',this)">Physics</button>
+        <button class="ptab" onclick="setPropTab('audio',this)">Audio</button>
+      </div>
+      <div id="tab-game">
+        <div class="prop-row"><span class="prop-key">Genre</span>
+          <select class="prop-val" onchange="markUnsaved()">
+            <option>Platformer</option><option>Top-down</option><option>Shooter</option><option>Puzzle</option><option>Racing</option><option>RPG</option>
+          </select>
+        </div>
+        <div class="prop-row"><span class="prop-key">Width</span><input class="prop-val" id="gw" type="number" value="800" onchange="resizeCanvas()"></div>
+        <div class="prop-row"><span class="prop-key">Height</span><input class="prop-val" id="gh" type="number" value="500" onchange="resizeCanvas()"></div>
+        <div class="prop-row"><span class="prop-key">BG Color</span><input class="prop-color" id="bg-color" type="color" value="#111122" onchange="renderCanvas()"></div>
+        <div class="prop-row"><span class="prop-key">Lives</span><input class="prop-val" type="number" value="3" min="1" max="9" onchange="markUnsaved()"></div>
+        <div class="prop-row"><span class="prop-key">Time Limit</span><input class="prop-val" type="number" value="120" onchange="markUnsaved()"></div>
+      </div>
+      <div id="tab-physics" style="display:none">
+        <div class="prop-row"><span class="prop-key">Gravity</span><input class="prop-val" id="gravity" type="number" value="0.5" step="0.1" onchange="markUnsaved()"></div>
+        <div class="prop-row"><span class="prop-key">Jump Force</span><input class="prop-val" type="number" value="12" step="0.5" onchange="markUnsaved()"></div>
+        <div class="prop-row"><span class="prop-key">Speed</span><input class="prop-val" type="number" value="4" step="0.5" onchange="markUnsaved()"></div>
+        <div class="prop-row"><span class="prop-key">Friction</span><input class="prop-val" type="number" value="0.85" step="0.05" onchange="markUnsaved()"></div>
+        <div class="prop-row"><span class="prop-key">Collisions</span>
+          <select class="prop-val" onchange="markUnsaved()"><option>AABB</option><option>Circle</option><option>Pixel</option></select>
+        </div>
+      </div>
+      <div id="tab-audio" style="display:none">
+        <div class="prop-row"><span class="prop-key">Music</span>
+          <select class="prop-val" onchange="markUnsaved()"><option>None</option><option>Chiptune 1</option><option>Chiptune 2</option><option>Ambient</option><option>Action</option></select>
+        </div>
+        <div class="prop-row"><span class="prop-key">SFX Pack</span>
+          <select class="prop-val" onchange="markUnsaved()"><option>Default</option><option>Retro 8-bit</option><option>Modern</option><option>Cartoon</option></select>
+        </div>
+        <div class="prop-row"><span class="prop-key">Volume</span><input class="prop-val" type="number" value="80" min="0" max="100" onchange="markUnsaved()"></div>
+      </div>
+    </div>
+
+    <!-- Selected Object Properties -->
+    <div class="prop-section" id="obj-props">
+      <div class="prop-label">Selected Object</div>
+      <div id="no-sel" style="color:var(--muted);font-size:.8rem;padding:.3rem 0">No object selected.<br>Click an object on the canvas.</div>
+      <div id="sel-props" style="display:none">
+        <div class="prop-row"><span class="prop-key">Type</span><span class="prop-val" id="sel-type" style="border:none;background:none;color:var(--c)">—</span></div>
+        <div class="prop-row"><span class="prop-key">X</span><input class="prop-val" id="sel-x" type="number" onchange="updateSelProp('x',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Y</span><input class="prop-val" id="sel-y" type="number" onchange="updateSelProp('y',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Width</span><input class="prop-val" id="sel-w" type="number" onchange="updateSelProp('w',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Height</span><input class="prop-val" id="sel-h" type="number" onchange="updateSelProp('h',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Color</span><input class="prop-color" id="sel-col" type="color" onchange="updateSelProp('color',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Speed</span><input class="prop-val" id="sel-spd" type="number" value="1" step="0.5" onchange="updateSelProp('speed',this.value)"></div>
+        <div class="prop-row"><span class="prop-key">Visible</span>
+          <select class="prop-val" id="sel-vis" onchange="updateSelProp('visible',this.value)"><option>Yes</option><option>No</option></select>
+        </div>
+        <div style="margin-top:.7rem;display:flex;gap:.4rem">
+          <button class="btn btn-o" style="flex:1;font-size:.65rem;justify-content:center" onclick="duplicateSelected()">⧉ Copy</button>
+          <button class="btn" style="flex:1;font-size:.65rem;justify-content:center;background:rgba(255,45,107,.1);border:1px solid rgba(255,45,107,.3);color:var(--p)" onclick="deleteSelected()">🗑 Del</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Publish Info -->
+    <div class="prop-section">
+      <div class="prop-label">Publish Info</div>
+      <div class="prop-row" style="flex-direction:column;align-items:flex-start;gap:.4rem">
+        <span class="prop-key">Description</span>
+        <textarea style="width:100%;height:60px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--w);font-family:var(--fb);font-size:.78rem;padding:.4rem .6rem;outline:none;resize:none;line-height:1.5" placeholder="Describe your game..." oninput="markUnsaved()"></textarea>
+      </div>
+      <div class="prop-row"><span class="prop-key">Category</span>
+        <select class="prop-val" onchange="markUnsaved()"><option>Platformer</option><option>Arcade</option><option>Puzzle</option><option>Action</option><option>RPG</option></select>
+      </div>
+      <div class="prop-row"><span class="prop-key">Rating</span>
+        <select class="prop-val" onchange="markUnsaved()"><option>Everyone</option><option>Teen</option><option>Mature</option></select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW OVERLAY -->
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-header">
+    <h3>▶ PREVIEW MODE</h3>
+    <div style="display:flex;gap:.7rem;align-items:center">
+      <span style="font-family:var(--fm);font-size:.68rem;color:var(--muted)">Score: <span id="prev-score" style="color:var(--c)">0</span> &nbsp;|&nbsp; Lives: <span id="prev-lives" style="color:var(--p)">3</span></span>
+      <button class="btn btn-o" onclick="closePreview()">✕ Exit Preview</button>
+    </div>
+  </div>
+  <div class="preview-body">
+    <canvas id="preview-canvas" width="800" height="500"></canvas>
+  </div>
+</div>
+
+<!-- PUBLISH OVERLAY -->
+<div class="pub-overlay" id="pub-overlay" onclick="closePubOnBg(event)">
+  <div class="pub-box">
+    <h2>🚀 <span style="color:var(--g)">Publish</span> Game</h2>
+    <p class="sub">Your game will go live instantly for 2.4M+ players.</p>
+    <div class="pub-steps">
+      <div class="pstep done" id="ps1">
+        <div class="pstep-num">✓</div>
+        <div class="pstep-text"><strong>Game Created</strong><span id="pub-game-name">Untitled Game</span></div>
+      </div>
+      <div class="pstep" id="ps2">
+        <div class="pstep-num">2</div>
+        <div class="pstep-text"><strong>Optimize & Package</strong><span>Compress assets & bundle game files</span></div>
+      </div>
+      <div class="pstep" id="ps3">
+        <div class="pstep-num">3</div>
+        <div class="pstep-text"><strong>Deploy to CDN</strong><span>Push to 12 global edge nodes</span></div>
+      </div>
+      <div class="pstep" id="ps4">
+        <div class="pstep-num">4</div>
+        <div class="pstep-text"><strong>Live!</strong><span>Players can now find & play your game</span></div>
+      </div>
+    </div>
+    <div class="pub-url" id="pub-url"></div>
+    <div id="pub-actions">
+      <button class="btn btn-g" style="width:100%;justify-content:center;font-size:.85rem;padding:.9rem" onclick="runPublish()">🚀 Publish Now — Free</button>
+    </div>
+    <div class="share-row" id="share-row" style="display:none">
+      <button class="btn btn-o" onclick="copyLink()">📋 Copy Link</button>
+      <button class="btn btn-c" onclick="window.open('index.html','_blank')">🎮 View in Store</button>
+      <button class="btn btn-o" onclick="closePub()">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  GAME CREATOR ENGINE
+// ══════════════════════════════════════
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+// State
+let objects = [];
+let selectedObj = null;
+let currentTool = 'select';
+let zoom = 1;
+let showGrid = true;
+let undoStack = [];
+let redoStack = [];
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
+let currentLevel = 1;
+let previewRunning = false;
+let previewAnim = null;
+let score = 0;
+
+// Object templates
+const TEMPLATES = {
+  player:     { w:32, h:48, color:'#00ffe1', emoji:'🧑', label:'Player' },
+  enemy:      { w:32, h:32, color:'#ff2d6b', emoji:'👾', label:'Enemy' },
+  platform:   { w:120, h:20, color:'#4a5568', emoji:'▬', label:'Platform' },
+  coin:       { w:20, h:20, color:'#ffd600', emoji:'🪙', label:'Coin' },
+  wall:       { w:20, h:100, color:'#718096', emoji:'🧱', label:'Wall' },
+  spike:      { w:24, h:24, color:'#e53e3e', emoji:'⚠', label:'Spike' },
+  door:       { w:40, h:60, color:'#805ad5', emoji:'🚪', label:'Door' },
+  key:        { w:22, h:22, color:'#ed8936', emoji:'🔑', label:'Key' },
+  powerup:    { w:28, h:28, color:'#48bb78', emoji:'⭐', label:'Power Up' },
+  checkpoint: { w:20, h:60, color:'#4299e1', emoji:'🏁', label:'Checkpoint' },
+  text:       { w:100, h:30, color:'#ffffff', emoji:'📝', label:'Text' },
+  bg:         { w:800, h:500, color:'#0a0a20', emoji:'🌌', label:'Background' },
+};
+
+function init() {
+  // Add default platform
+  addObject('platform', 100, 420);
+  addObject('platform', 400, 300);
+  addObject('player', 120, 360);
+  addObject('coin', 260, 280);
+  addObject('coin', 460, 250);
+  renderCanvas();
+  updateObjList();
+}
+
+function addObject(type, x, y) {
+  const t = TEMPLATES[type];
+  if (!t) return;
+  const obj = {
+    id: Date.now() + Math.random(),
+    type,
+    x: x ?? Math.floor(Math.random() * 600 + 100),
+    y: y ?? Math.floor(Math.random() * 300 + 100),
+    w: t.w, h: t.h,
+    color: t.color,
+    emoji: t.emoji,
+    label: t.label,
+    visible: true,
+    speed: 1,
+  };
+  pushUndo();
+  objects.push(obj);
+  renderCanvas();
+  updateObjList();
+  selectObj(obj);
+  markUnsaved();
+  showToast(`✅ ${t.label} added to canvas`);
+}
+
+function renderCanvas() {
+  const bg = document.getElementById('bg-color')?.value || '#111122';
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  if (showGrid) {
+    ctx.strokeStyle = 'rgba(0,255,225,0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 32) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+  }
+
+  // Draw objects
+  objects.forEach(obj => {
+    if (!obj.visible) return;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = obj.color;
+    roundRect(ctx, obj.x, obj.y, obj.w, obj.h, 4);
+    ctx.fill();
+
+    // Label
+    ctx.globalAlpha = 1;
+    ctx.font = `${Math.min(obj.h * 0.6, 22)}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(obj.emoji, obj.x + obj.w / 2, obj.y + obj.h / 2);
+
+    // Selection
+    if (selectedObj && selectedObj.id === obj.id) {
+      ctx.strokeStyle = '#00ffe1';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      roundRect(ctx, obj.x - 2, obj.y - 2, obj.w + 4, obj.h + 4, 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Resize handles
+      drawHandle(obj.x - 4, obj.y - 4);
+      drawHandle(obj.x + obj.w - 4, obj.y - 4);
+      drawHandle(obj.x - 4, obj.y + obj.h - 4);
+      drawHandle(obj.x + obj.w - 4, obj.y + obj.h - 4);
+    }
+  });
+
+  ctx.globalAlpha = 1;
+
+  // Level label
+  ctx.font = 'bold 13px JetBrains Mono, monospace';
+  ctx.fillStyle = 'rgba(0,255,225,0.3)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`LEVEL ${currentLevel}  |  ${objects.length} objects`, 10, 10);
+}
+
+function drawHandle(x, y) {
+  ctx.fillStyle = '#00ffe1';
+  ctx.fillRect(x, y, 8, 8);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Canvas mouse events
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / (rect.width / canvas.width);
+  const y = (e.clientY - rect.top) / (rect.height / canvas.height);
+
+  if (currentTool === 'erase') {
+    const hit = hitTest(x, y);
+    if (hit) { pushUndo(); objects = objects.filter(o => o.id !== hit.id); selectedObj = null; renderCanvas(); updateObjList(); updateSelPanel(); return; }
+  }
+
+  const hit = hitTest(x, y);
+  if (hit) {
+    selectObj(hit);
+    isDragging = true;
+    dragOffset = { x: x - hit.x, y: y - hit.y };
+  } else {
+    selectedObj = null;
+    updateSelPanel();
+    renderCanvas();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!isDragging || !selectedObj) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / (rect.width / canvas.width);
+  const y = (e.clientY - rect.top) / (rect.height / canvas.height);
+  selectedObj.x = Math.round(x - dragOffset.x);
+  selectedObj.y = Math.round(y - dragOffset.y);
+  updateSelPanel();
+  renderCanvas();
+  markUnsaved();
+});
+
+canvas.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; } });
+
+function hitTest(x, y) {
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const o = objects[i];
+    if (x >= o.x && x <= o.x + o.w && y >= o.y && y <= o.y + o.h) return o;
+  }
+  return null;
+}
+
+function selectObj(obj) {
+  selectedObj = obj;
+  updateSelPanel();
+  renderCanvas();
+  // Highlight in list
+  document.querySelectorAll('.obj-item').forEach(el => el.classList.remove('sel'));
+  const el = document.getElementById(`obj-${obj.id}`);
+  if (el) el.classList.add('sel');
+}
+
+function updateSelPanel() {
+  if (!selectedObj) {
+    document.getElementById('no-sel').style.display = '';
+    document.getElementById('sel-props').style.display = 'none';
+    return;
+  }
+  document.getElementById('no-sel').style.display = 'none';
+  document.getElementById('sel-props').style.display = '';
+  document.getElementById('sel-type').textContent = selectedObj.label;
+  document.getElementById('sel-x').value = Math.round(selectedObj.x);
+  document.getElementById('sel-y').value = Math.round(selectedObj.y);
+  document.getElementById('sel-w').value = selectedObj.w;
+  document.getElementById('sel-h').value = selectedObj.h;
+  document.getElementById('sel-col').value = selectedObj.color;
+  document.getElementById('sel-spd').value = selectedObj.speed || 1;
+  document.getElementById('sel-vis').value = selectedObj.visible ? 'Yes' : 'No';
+}
+
+function updateSelProp(key, val) {
+  if (!selectedObj) return;
+  if (key === 'x') selectedObj.x = parseFloat(val);
+  else if (key === 'y') selectedObj.y = parseFloat(val);
+  else if (key === 'w') selectedObj.w = parseFloat(val);
+  else if (key === 'h') selectedObj.h = parseFloat(val);
+  else if (key === 'color') selectedObj.color = val;
+  else if (key === 'speed') selectedObj.speed = parseFloat(val);
+  else if (key === 'visible') selectedObj.visible = val === 'Yes';
+  renderCanvas(); markUnsaved();
+}
+
+function updateObjList() {
+  document.getElementById('obj-count').textContent = objects.length;
+  const list = document.getElementById('obj-list');
+  list.innerHTML = objects.map(o => `
+    <div class="obj-item ${selectedObj?.id === o.id ? 'sel' : ''}" id="obj-${o.id}" onclick="selectObjById('${o.id}')">
+      <span class="obj-icon">${o.emoji}</span>
+      <span class="obj-name">${o.label}</span>
+      <span class="obj-del" onclick="event.stopPropagation();deleteObjById('${o.id}')">✕</span>
+    </div>
+  `).join('');
+}
+
+function selectObjById(id) {
+  const obj = objects.find(o => String(o.id) === String(id));
+  if (obj) selectObj(obj);
+}
+
+function deleteObjById(id) {
+  pushUndo();
+  objects = objects.filter(o => String(o.id) !== String(id));
+  if (selectedObj && String(selectedObj.id) === String(id)) { selectedObj = null; updateSelPanel(); }
+  renderCanvas(); updateObjList(); markUnsaved();
+}
+
+function deleteSelected() {
+  if (!selectedObj) return;
+  deleteObjById(selectedObj.id);
+}
+
+function duplicateSelected() {
+  if (!selectedObj) return;
+  pushUndo();
+  const copy = { ...selectedObj, id: Date.now() + Math.random(), x: selectedObj.x + 20, y: selectedObj.y + 20 };
+  objects.push(copy);
+  selectObj(copy);
+  renderCanvas(); updateObjList(); markUnsaved();
+  showToast('⧉ Object duplicated');
+}
+
+function clearAll() {
+  if (!confirm('Clear all objects?')) return;
+  pushUndo(); objects = []; selectedObj = null;
+  renderCanvas(); updateObjList(); updateSelPanel(); markUnsaved();
+}
+
+// TOOLS
+function setTool(t) {
+  currentTool = t;
+  ['sel','mov','drw','ers'].forEach(k => {
+    const el = document.getElementById(`tool-${k}-btn`);
+    if (el) el.classList.remove('on');
+  });
+  const map = { select:'sel', move:'mov', draw:'drw', erase:'ers' };
+  const el = document.getElementById(`tool-${map[t]}-btn`);
+  if (el) el.classList.add('on');
+  canvas.style.cursor = t === 'erase' ? 'not-allowed' : t === 'draw' ? 'crosshair' : 'default';
+}
+
+// ZOOM
+function zoomIn() { zoom = Math.min(zoom + 0.25, 3); applyZoom(); }
+function zoomOut() { zoom = Math.max(zoom - 0.25, 0.25); applyZoom(); }
+function resetZoom() { zoom = 1; applyZoom(); }
+function applyZoom() {
+  canvas.style.width = (canvas.width * zoom) + 'px';
+  canvas.style.height = (canvas.height * zoom) + 'px';
+  document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
+}
+
+function toggleGrid() {
+  showGrid = !showGrid;
+  document.getElementById('grid-btn').classList.toggle('on', showGrid);
+  renderCanvas();
+}
+
+function resizeCanvas() {
+  const w = parseInt(document.getElementById('gw').value) || 800;
+  const h = parseInt(document.getElementById('gh').value) || 500;
+  canvas.width = Math.max(400, Math.min(w, 1920));
+  canvas.height = Math.max(300, Math.min(h, 1080));
+  applyZoom(); renderCanvas(); markUnsaved();
+}
+
+// UNDO/REDO
+function pushUndo() {
+  undoStack.push(JSON.stringify(objects));
+  if (undoStack.length > 40) undoStack.shift();
+  redoStack = [];
+}
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(JSON.stringify(objects));
+  objects = JSON.parse(undoStack.pop());
+  selectedObj = null; renderCanvas(); updateObjList(); updateSelPanel();
+  showToast('↩ Undone');
+}
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(JSON.stringify(objects));
+  objects = JSON.parse(redoStack.pop());
+  selectedObj = null; renderCanvas(); updateObjList(); updateSelPanel();
+  showToast('↪ Redone');
+}
+
+// KEYBOARD SHORTCUTS
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveGame(); }
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'd' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); duplicateSelected(); }
+  if (selectedObj) {
+    const step = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowLeft') { selectedObj.x -= step; renderCanvas(); updateSelPanel(); markUnsaved(); }
+    if (e.key === 'ArrowRight') { selectedObj.x += step; renderCanvas(); updateSelPanel(); markUnsaved(); }
+    if (e.key === 'ArrowUp') { selectedObj.y -= step; renderCanvas(); updateSelPanel(); markUnsaved(); }
+    if (e.key === 'ArrowDown') { selectedObj.y += step; renderCanvas(); updateSelPanel(); markUnsaved(); }
+  }
+});
+
+// PROPERTY TABS
+function setPropTab(tab, btn) {
+  ['game','physics','audio'].forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// LEVEL
+function changeLevel(val) {
+  currentLevel = parseInt(val.replace('Level ', ''));
+  showToast(`📁 Switched to ${val}`);
+}
+function addLevel() {
+  const sel = document.getElementById('level-select');
+  const n = sel.options.length + 1;
+  const opt = document.createElement('option');
+  opt.text = `Level ${n}`; sel.add(opt); sel.value = `Level ${n}`;
+  currentLevel = n; showToast(`➕ Level ${n} added`);
+}
+
+// SAVE
+function saveGame() {
+  const name = document.getElementById('game-name').value || 'Untitled Game';
+  const data = { name, objects, level: currentLevel, ts: Date.now() };
+  localStorage.setItem('gogames_creator_save', JSON.stringify(data));
+  document.getElementById('unsaved').style.display = 'none';
+  showToast('💾 Game saved locally!');
+}
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem('gogames_creator_save');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    objects = data.objects || [];
+    document.getElementById('game-name').value = data.name || '';
+    currentLevel = data.level || 1;
+    renderCanvas(); updateObjList();
+  } catch(e) {}
+}
+
+function markUnsaved() {
+  document.getElementById('unsaved').style.display = '';
+}
+document.getElementById('game-name').addEventListener('input', markUnsaved);
+
+// PREVIEW
+function openPreview() {
+  const ov = document.getElementById('preview-overlay');
+  const pc = document.getElementById('preview-canvas');
+  pc.width = canvas.width; pc.height = canvas.height;
+  ov.classList.add('on');
+  runPreview(pc);
+}
+
+function closePreview() {
+  document.getElementById('preview-overlay').classList.remove('on');
+  if (previewAnim) { cancelAnimationFrame(previewAnim); previewAnim = null; }
+}
+
+function runPreview(pc) {
+  const pctx = pc.getContext('2d');
+  score = 0; let lives = 3;
+  const state = JSON.parse(JSON.stringify(objects));
+  const playerObj = state.find(o => o.type === 'player');
+  if (playerObj) { playerObj.vy = 0; playerObj.vx = 0; }
+  const keys = {};
+  document.addEventListener('keydown', e => keys[e.key] = true);
+  document.addEventListener('keyup', e => keys[e.key] = false);
+
+  function loop() {
+    const bg = document.getElementById('bg-color')?.value || '#111122';
+    pctx.fillStyle = bg; pctx.fillRect(0, 0, pc.width, pc.height);
+
+    // Physics
+    if (playerObj) {
+      const gravity = parseFloat(document.getElementById('gravity')?.value || 0.5);
+      playerObj.vy += gravity;
+      if (keys['ArrowLeft'] || keys['a']) playerObj.vx = -4;
+      else if (keys['ArrowRight'] || keys['d']) playerObj.vx = 4;
+      else playerObj.vx *= 0.8;
+      if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && Math.abs(playerObj.vy) < 1) playerObj.vy = -12;
+
+      playerObj.x += playerObj.vx;
+      playerObj.y += playerObj.vy;
+
+      // Floor
+      if (playerObj.y + playerObj.h > pc.height) { playerObj.y = pc.height - playerObj.h; playerObj.vy = 0; }
+
+      // Platform collision
+      state.filter(o => o.type === 'platform' || o.type === 'wall').forEach(p => {
+        if (playerObj.x < p.x + p.w && playerObj.x + playerObj.w > p.x &&
+            playerObj.y < p.y + p.h && playerObj.y + playerObj.h > p.y) {
+          if (playerObj.vy > 0) { playerObj.y = p.y - playerObj.h; playerObj.vy = 0; }
+          else if (playerObj.vy < 0) { playerObj.y = p.y + p.h; playerObj.vy = 0; }
+        }
+      });
+
+      // Coin collection
+      state.filter(o => o.type === 'coin' && o.visible !== false).forEach(c => {
+        if (playerObj.x < c.x + c.w && playerObj.x + playerObj.w > c.x &&
+            playerObj.y < c.y + c.h && playerObj.y + playerObj.h > c.y) {
+          c.visible = false; score += 10;
+          document.getElementById('prev-score').textContent = score;
+        }
+      });
+    }
+
+    // Draw
+    state.forEach(obj => {
+      if (obj.visible === false) return;
+      pctx.globalAlpha = 0.92;
+      pctx.fillStyle = obj.color;
+      roundRectCtx(pctx, obj.x, obj.y, obj.w, obj.h, 4); pctx.fill();
+      pctx.globalAlpha = 1;
+      pctx.font = `${Math.min(obj.h * 0.6, 22)}px serif`;
+      pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+      pctx.fillText(obj.emoji, obj.x + obj.w / 2, obj.y + obj.h / 2);
+    });
+
+    // HUD
+    pctx.globalAlpha = 1;
+    pctx.fillStyle = 'rgba(0,0,0,.5)';
+    pctx.fillRect(0, 0, pc.width, 36);
+    pctx.font = '13px JetBrains Mono, monospace';
+    pctx.fillStyle = '#00ffe1'; pctx.textAlign = 'left'; pctx.textBaseline = 'middle';
+    pctx.fillText(`⭐ ${score}`, 14, 18);
+    pctx.fillStyle = '#ff2d6b'; pctx.textAlign = 'center';
+    pctx.fillText('← → move  |  ↑ / W / Space jump', pc.width / 2, 18);
+    pctx.fillStyle = '#ffd600'; pctx.textAlign = 'right';
+    pctx.fillText(`♥ ${lives}`, pc.width - 14, 18);
+    document.getElementById('prev-lives').textContent = lives;
+
+    previewAnim = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function roundRectCtx(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// CODE DRAWER
+function openCodeDrawer() {
+  document.getElementById('code-drawer').classList.toggle('open');
+}
+function closeCodeDrawer() {
+  document.getElementById('code-drawer').classList.remove('open');
+}
+function runCode() {
+  showToast('▶ Code executed (preview mode only)', false);
+}
+
+// PUBLISH
+function openPublish() {
+  document.getElementById('pub-game-name').textContent = document.getElementById('game-name').value || 'Untitled Game';
+  document.getElementById('pub-overlay').classList.add('on');
+  // Reset steps
+  ['ps2','ps3','ps4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('done');
+    el.querySelector('.pstep-num').textContent = id.replace('ps','');
+  });
+  document.getElementById('pub-url').classList.remove('on');
+  document.getElementById('pub-actions').style.display = '';
+  document.getElementById('share-row').style.display = 'none';
+}
+
+function runPublish() {
+  document.getElementById('pub-actions').style.display = 'none';
+  const name = document.getElementById('game-name').value || 'untitled-game';
+  const slug = name.toLowerCase().replace(/[^a-z0-9]/g,'-');
+  const steps = ['ps2','ps3','ps4'];
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= steps.length) {
+      clearInterval(iv);
+      const url = `https://gogogames.io/play/${slug}-${Math.floor(Math.random()*9000+1000)}`;
+      document.getElementById('pub-url').textContent = url;
+      document.getElementById('pub-url').classList.add('on');
+      document.getElementById('share-row').style.display = 'flex';
+      showToast('🎉 Game published! Live for 2.4M+ players.');
+      return;
+    }
+    const el = document.getElementById(steps[i]);
+    el.classList.add('done');
+    el.querySelector('.pstep-num').textContent = '✓';
+    i++;
+  }, 900);
+}
+
+function closePub() { document.getElementById('pub-overlay').classList.remove('on'); }
+function closePubOnBg(e) { if (e.target === document.getElementById('pub-overlay')) closePub(); }
+function copyLink() {
+  const url = document.getElementById('pub-url').textContent;
+  navigator.clipboard?.writeText(url).then(() => showToast('📋 Link copied!')).catch(() => showToast('📋 Copy: ' + url));
+}
+
+// TOAST
+function showToast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (err?' err':'');
+  t.classList.add('on'); clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 3200);
+}
+
+// INIT
+loadSave();
+init();
+applyZoom();
+</script>
+</body>
+</html>

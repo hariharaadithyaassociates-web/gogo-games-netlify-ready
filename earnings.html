@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Track your game revenue, manage payouts, and optimize monetization.">
+<meta name="theme-color" content="#c8ff00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<meta property="og:title" content="Earnings Dashboard — GoGo Games">
+<meta property="og:description" content="Track your game revenue, manage payouts, and optimize monetization.">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earnings Dashboard — GoGo Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --c:#00ffe1;--p:#ff2d6b;--y:#ffd600;--g:#00ff88;
+  --bg:#050508;--bg2:#0a0a12;--bg3:#0f0f1a;
+  --glass:rgba(255,255,255,0.03);--glass2:rgba(255,255,255,0.06);
+  --border:rgba(0,255,225,0.12);--border2:rgba(0,255,225,0.28);
+  --w:#fff;--muted:#5a6a7a;--text:#c8d8e8;
+  --fd:'Bebas Neue',cursive;--fb:'Syne',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--w);font-family:var(--fb);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);pointer-events:none;z-index:0;}
+
+/* NAV */
+.topbar{position:sticky;top:0;z-index:100;height:58px;background:rgba(5,5,8,.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1rem,4vw,3rem);backdrop-filter:blur(24px);}
+.tb-logo{font-family:var(--fd);font-size:1.4rem;letter-spacing:3px;background:linear-gradient(90deg,var(--c),#7fffee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;}
+.tb-nav{display:flex;gap:.5rem;align-items:center;}
+.btn{font-family:var(--fm);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;border-radius:7px;padding:.48rem 1.1rem;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;}
+.btn-o{background:transparent;border:1px solid var(--border2);color:var(--text);}
+.btn-o:hover{border-color:var(--c);color:var(--c);}
+.btn-c{background:var(--c);color:var(--bg);}
+.btn-c:hover{background:#33fff0;transform:translateY(-1px);}
+.btn-p{background:var(--p);color:var(--w);}
+.btn-p:hover{background:#ff5585;transform:translateY(-1px);}
+.btn-g{background:var(--g);color:var(--bg);}
+.btn-g:hover{background:#33ffaa;transform:translateY(-1px);}
+
+/* LAYOUT */
+.page{max-width:1300px;margin:0 auto;padding:2rem clamp(1rem,4vw,3rem);position:relative;z-index:1;}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.5rem;}
+.page-header h1{font-family:var(--fd);font-size:clamp(2.5rem,5vw,4rem);letter-spacing:2px;line-height:1;}
+.page-header h1 span{color:var(--c);}
+.page-header p{color:var(--muted);font-size:.9rem;margin-top:.3rem;}
+.date-range{display:flex;gap:.5rem;align-items:center;}
+.date-btn{font-family:var(--fm);font-size:.65rem;letter-spacing:2px;text-transform:uppercase;padding:.35rem .9rem;border:1px solid var(--border);border-radius:100px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
+.date-btn.on,.date-btn:hover{border-color:var(--c);color:var(--c);background:rgba(0,255,225,.06);}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem;margin-bottom:2rem;}
+.kcard{background:var(--glass2);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.6rem;position:relative;overflow:hidden;transition:border-color .2s;}
+.kcard:hover{border-color:var(--border2);}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px;}
+.kcard.kc1::before{background:linear-gradient(90deg,var(--c),#004d4d);}
+.kcard.kc2::before{background:linear-gradient(90deg,var(--p),#4d0020);}
+.kcard.kc3::before{background:linear-gradient(90deg,var(--y),#4d3a00);}
+.kcard.kc4::before{background:linear-gradient(90deg,var(--g),#004d25);}
+.kcard.kc5::before{background:linear-gradient(90deg,#a78bfa,#4c1d95);}
+.kcard.kc6::before{background:linear-gradient(90deg,#f97316,#7c2d12);}
+.klabel{font-family:var(--fm);font-size:.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;}
+.kval{font-family:var(--fd);font-size:2.6rem;line-height:1;margin-bottom:.3rem;}
+.kval.c{color:var(--c);}
+.kval.p{color:var(--p);}
+.kval.y{color:var(--y);}
+.kval.g{color:var(--g);}
+.kval.v{color:#a78bfa;}
+.kval.o{color:#f97316;}
+.kchange{font-family:var(--fm);font-size:.7rem;display:flex;align-items:center;gap:.3rem;}
+.kchange.up{color:var(--g);}
+.kchange.dn{color:var(--p);}
+.ksparkline{position:absolute;bottom:0;right:0;opacity:.15;}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+.chart-card{background:var(--glass2);border:1px solid var(--border);border-radius:18px;padding:1.5rem;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+.card-title{font-family:var(--fd);font-size:1.5rem;letter-spacing:1px;}
+.card-sub{font-family:var(--fm);font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-top:.1rem;}
+.chart-wrap{position:relative;}
+
+/* REVENUE BREAKDOWN */
+.breakdown-grid{display:grid;gap:.7rem;margin-top:.5rem;}
+.brow{display:flex;align-items:center;gap:.8rem;}
+.brow-label{font-family:var(--fm);font-size:.72rem;color:var(--text);width:110px;flex-shrink:0;}
+.brow-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;}
+.brow-bar{height:100%;border-radius:4px;transition:width 1s ease;}
+.brow-val{font-family:var(--fm);font-size:.72rem;color:var(--w);width:55px;text-align:right;flex-shrink:0;}
+
+/* GAMES TABLE */
+.table-card{background:var(--glass2);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:1.5rem;}
+.table-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:.7rem 1.5rem;font-family:var(--fm);font-size:.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);}
+tbody tr{transition:background .15s;cursor:pointer;}
+tbody tr:hover{background:rgba(0,255,225,.03);}
+tbody td{padding:.85rem 1.5rem;font-size:.88rem;border-bottom:1px solid rgba(255,255,255,.03);}
+tbody tr:last-child td{border-bottom:none;}
+.game-cell{display:flex;align-items:center;gap:.8rem;}
+.game-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.game-name{font-weight:700;font-size:.9rem;}
+.game-genre{font-family:var(--fm);font-size:.62rem;color:var(--muted);margin-top:.1rem;letter-spacing:1px;}
+.trend-up{color:var(--g);font-family:var(--fm);font-size:.75rem;}
+.trend-dn{color:var(--p);font-family:var(--fm);font-size:.75rem;}
+.status-badge{display:inline-block;padding:.15rem .7rem;border-radius:100px;font-family:var(--fm);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;}
+.st-live{background:rgba(0,255,136,.1);color:var(--g);border:1px solid rgba(0,255,136,.25);}
+.st-draft{background:rgba(255,214,0,.1);color:var(--y);border:1px solid rgba(255,214,0,.25);}
+.st-review{background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.25);}
+
+/* PAYOUT SECTION */
+.payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+.pcard{background:var(--glass2);border:1px solid var(--border);border-radius:18px;padding:1.5rem;}
+.pcard h3{font-family:var(--fd);font-size:1.5rem;letter-spacing:1px;margin-bottom:1rem;}
+.balance-amount{font-family:var(--fd);font-size:4rem;color:var(--g);line-height:1;margin-bottom:.3rem;}
+.balance-sub{font-family:var(--fm);font-size:.68rem;color:var(--muted);margin-bottom:1.5rem;}
+.payout-history{display:flex;flex-direction:column;gap:.6rem;}
+.ph-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;background:var(--glass);border:1px solid var(--border);border-radius:10px;}
+.ph-left{display:flex;align-items:center;gap:.7rem;}
+.ph-icon{font-size:1.1rem;}
+.ph-label{font-size:.85rem;font-weight:600;}
+.ph-date{font-family:var(--fm);font-size:.65rem;color:var(--muted);}
+.ph-amount{font-family:var(--fm);font-size:.85rem;font-weight:700;}
+.ph-amount.paid{color:var(--g);}
+.ph-amount.pending{color:var(--y);}
+
+/* REFERRAL */
+.ref-card{background:linear-gradient(135deg,rgba(0,255,225,.05),rgba(255,45,107,.05));border:1px solid var(--border2);border-radius:18px;padding:1.8rem 2rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;}
+.ref-left h3{font-family:var(--fd);font-size:2rem;letter-spacing:1px;margin-bottom:.3rem;}
+.ref-left p{color:var(--text);font-size:.9rem;max-width:400px;line-height:1.6;}
+.ref-link-box{display:flex;gap:.5rem;align-items:center;margin-top:1rem;flex-wrap:wrap;}
+.ref-input{background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:8px;padding:.55rem 1rem;color:var(--c);font-family:var(--fm);font-size:.75rem;width:260px;outline:none;}
+.ref-stats{display:flex;gap:2rem;text-align:center;}
+.rs-val{font-family:var(--fd);font-size:2.2rem;color:var(--y);display:block;line-height:1;}
+.rs-label{font-family:var(--fm);font-size:.62rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* MONETIZATION SETTINGS */
+.mono-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.mcard{background:var(--glass2);border:1px solid var(--border);border-radius:14px;padding:1.3rem 1.4rem;display:flex;align-items:flex-start;gap:.8rem;transition:all .3s;}
+.mcard:hover{border-color:var(--border2);}
+.mcard.enabled{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04);}
+.mcard-icon{font-size:1.8rem;flex-shrink:0;}
+.mcard-body{flex:1;}
+.mcard-title{font-weight:700;font-size:.92rem;margin-bottom:.3rem;}
+.mcard-desc{color:var(--muted);font-size:.78rem;line-height:1.5;}
+.mcard-rev{font-family:var(--fm);font-size:.7rem;color:var(--c);margin-top:.4rem;}
+.toggle{position:relative;width:38px;height:20px;flex-shrink:0;margin-top:.1rem;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:20px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--c);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:var(--bg);}
+
+/* WITHDRAW MODAL */
+.wmodal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:200;align-items:center;justify-content:center;}
+.wmodal.on{display:flex;}
+.wbox{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2.3rem;max-width:440px;width:90%;animation:scaleIn .25s ease;}
+.wbox h2{font-family:var(--fd);font-size:2rem;letter-spacing:1px;margin-bottom:.3rem;}
+.wbox .sub{color:var(--muted);font-size:.85rem;margin-bottom:1.5rem;}
+.field{margin-bottom:.9rem;}
+.field label{display:block;font-family:var(--fm);font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+.field input,.field select{width:100%;padding:.7rem 1rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--w);font-family:var(--fb);font-size:.9rem;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--c);}
+.fee-note{color:var(--muted);font-size:.75rem;font-family:var(--fm);padding:.6rem .8rem;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:1rem;}
+.wx{position:absolute;top:1rem;right:1rem;width:28px;height:28px;background:var(--glass2);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:absolute;}
+.wx:hover{color:var(--p);border-color:var(--p);}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--c);color:var(--w);padding:.8rem 1.3rem;border-radius:10px;font-size:.78rem;font-family:var(--fm);z-index:999;opacity:0;transform:translateY(12px) scale(.97);transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:280px;letter-spacing:.5px;}
+.toast.on{opacity:1;transform:translateY(0) scale(1);}
+.toast.err{border-color:var(--p);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+@keyframes scaleIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.rv{opacity:0;transform:translateY(20px);transition:opacity .5s,transform .5s;}
+.rv.vi{opacity:1;transform:translateY(0);}
+
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}.payout-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:1fr 1fr}}
+</style>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:1rem">
+    <a class="tb-logo" href="index.html">GoGo</a>
+    <span style="color:var(--muted);font-size:.8rem">/</span>
+    <span style="font-family:var(--fd);font-size:1.1rem;letter-spacing:2px;color:var(--text)">EARNINGS</span>
+  </div>
+  <div class="tb-nav">
+    <a href="creator.html" class="btn btn-o">✏ Creator</a>
+    <a href="index.html" class="btn btn-o">🎮 Play</a>
+    <button class="btn btn-g" onclick="openWithdraw()">💸 Withdraw</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="page-header rv">
+    <div>
+      <h1>YOUR <span>EARNINGS</span></h1>
+      <p>Real-time revenue analytics for your published games</p>
+    </div>
+    <div>
+      <div class="date-range" style="margin-bottom:.5rem">
+        <button class="date-btn on" onclick="setRange('7d',this)">7D</button>
+        <button class="date-btn" onclick="setRange('30d',this)">30D</button>
+        <button class="date-btn" onclick="setRange('90d',this)">90D</button>
+        <button class="date-btn" onclick="setRange('1y',this)">1Y</button>
+        <button class="date-btn" onclick="setRange('all',this)">ALL</button>
+      </div>
+      <div style="text-align:right;font-family:var(--fm);font-size:.65rem;color:var(--muted)">Last updated: <span id="last-updated">just now</span></div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kcard kc1 rv">
+      <div class="klabel">Total Revenue</div>
+      <div class="kval c" id="kv-revenue">$0</div>
+      <div class="kchange up">▲ 23.4% vs last period</div>
+    </div>
+    <div class="kcard kc4 rv">
+      <div class="klabel">Available Balance</div>
+      <div class="kval g" id="kv-balance">$0</div>
+      <div class="kchange up">▲ Ready to withdraw</div>
+    </div>
+    <div class="kcard kc2 rv">
+      <div class="klabel">Total Plays</div>
+      <div class="kval p" id="kv-plays">0</div>
+      <div class="kchange up">▲ 41.2% vs last period</div>
+    </div>
+    <div class="kcard kc3 rv">
+      <div class="klabel">Avg Revenue / Play</div>
+      <div class="kval y" id="kv-rpm">$0</div>
+      <div class="kchange up">▲ 8.1% vs last period</div>
+    </div>
+    <div class="kcard kc5 rv">
+      <div class="klabel">Subscribers</div>
+      <div class="kval v" id="kv-subs">0</div>
+      <div class="kchange up">▲ 15 new this week</div>
+    </div>
+    <div class="kcard kc6 rv">
+      <div class="klabel">Ad Impressions</div>
+      <div class="kval o" id="kv-ads">0</div>
+      <div class="kchange dn">▼ 3.2% (ad blocker impact)</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="main-grid">
+    <div class="chart-card rv">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Revenue Over Time</div>
+          <div class="card-sub">Daily earnings across all games</div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="date-btn on" id="ct-rev" onclick="switchChartType('revenue',this)">Revenue</button>
+          <button class="date-btn" id="ct-play" onclick="switchChartType('plays',this)">Plays</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="revenue-chart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card rv">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Revenue Sources</div>
+          <div class="card-sub">Breakdown by type</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:180px;margin-bottom:1rem">
+        <canvas id="pie-chart"></canvas>
+      </div>
+      <div class="breakdown-grid">
+        <div class="brow"><span class="brow-label">Ad Revenue</span><div class="brow-bar-wrap"><div class="brow-bar" style="width:0%;background:var(--c)" id="bar-ads"></div></div><span class="brow-val" id="bv-ads">$0</span></div>
+        <div class="brow"><span class="brow-label">Subscriptions</span><div class="brow-bar-wrap"><div class="brow-bar" style="width:0%;background:var(--p)" id="bar-subs"></div></div><span class="brow-val" id="bv-subs">$0</span></div>
+        <div class="brow"><span class="brow-label">In-App Items</span><div class="brow-bar-wrap"><div class="brow-bar" style="width:0%;background:var(--y)" id="bar-iap"></div></div><span class="brow-val" id="bv-iap">$0</span></div>
+        <div class="brow"><span class="brow-label">Tips / Donations</span><div class="brow-bar-wrap"><div class="brow-bar" style="width:0%;background:var(--g)" id="bar-tips"></div></div><span class="brow-val" id="bv-tips">$0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAMES TABLE -->
+  <div class="table-card rv">
+    <div class="table-header">
+      <div>
+        <div class="card-title">Your Games</div>
+        <div class="card-sub" style="font-family:var(--fm);font-size:.65rem;color:var(--muted);margin-top:.2rem">Performance by game</div>
+      </div>
+      <div style="display:flex;gap:.6rem">
+        <a href="creator.html" class="btn btn-c" style="font-size:.7rem">+ New Game</a>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Game</th>
+          <th>Status</th>
+          <th>Plays</th>
+          <th>Revenue</th>
+          <th>RPM</th>
+          <th>Rating</th>
+          <th>Trend</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="games-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- PAYOUT + HISTORY -->
+  <div class="payout-grid">
+    <div class="pcard rv">
+      <h3>💰 Balance & <span style="color:var(--g)">Payouts</span></h3>
+      <div class="balance-amount" id="balance-amount">$0.00</div>
+      <div class="balance-sub" id="balance-sub">Available for withdrawal · Next auto-payout: Jun 1</div>
+      <div style="display:flex;gap:.7rem;margin-bottom:1.5rem;flex-wrap:wrap">
+        <button class="btn btn-g btn-lg" onclick="openWithdraw()" style="flex:1;justify-content:center">💸 Withdraw Now</button>
+        <button class="btn btn-o" onclick="showToast('⚙ Payout settings coming soon!')" style="padding:.85rem">⚙</button>
+      </div>
+      <div style="font-family:var(--fm);font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem">Payout History</div>
+      <div class="payout-history" id="payout-history"></div>
+    </div>
+    <div class="pcard rv">
+      <h3>📊 Monthly <span style="color:var(--c)">Trend</span></h3>
+      <div style="height:200px;margin-bottom:1.5rem">
+        <canvas id="monthly-chart"></canvas>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+        <div style="text-align:center;background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:.9rem">
+          <div style="font-family:var(--fd);font-size:1.8rem;color:var(--y)" id="best-month-val">$0</div>
+          <div style="font-family:var(--fm);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px">Best Month</div>
+        </div>
+        <div style="text-align:center;background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:.9rem">
+          <div style="font-family:var(--fd);font-size:1.8rem;color:var(--c)" id="avg-month-val">$0</div>
+          <div style="font-family:var(--fm);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px">Monthly Avg</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERRAL -->
+  <div class="ref-card rv">
+    <div class="ref-left">
+      <h3>🤝 Refer Creators — Earn <span style="color:var(--y)">20%</span></h3>
+      <p>Invite other game creators to GoGo Games. Earn 20% of their revenue for 12 months. No cap.</p>
+      <div class="ref-link-box">
+        <input class="ref-input" id="ref-link" value="https://gogogames.io/ref/YOUR_CODE" readonly>
+        <button class="btn btn-c" onclick="copyRef()">📋 Copy</button>
+      </div>
+    </div>
+    <div class="ref-stats">
+      <div><span class="rs-val" id="ref-clicks">847</span><span class="rs-label">Clicks</span></div>
+      <div><span class="rs-val" id="ref-signups">23</span><span class="rs-label">Signups</span></div>
+      <div><span class="rs-val" id="ref-earned" style="color:var(--y)">$0</span><span class="rs-label">Earned</span></div>
+    </div>
+  </div>
+
+  <!-- MONETIZATION METHODS -->
+  <div class="card-title" style="margin-bottom:1rem;font-family:var(--fd);font-size:1.8rem;letter-spacing:1px">💡 Monetization <span style="color:var(--c)">Methods</span></div>
+  <div class="mono-grid rv">
+    <div class="mcard enabled">
+      <span class="mcard-icon">📢</span>
+      <div class="mcard-body">
+        <div class="mcard-title">Display Ads</div>
+        <div class="mcard-desc">Show banner and interstitial ads between game sessions. Auto-optimized CPM.</div>
+        <div class="mcard-rev">~$2–8 CPM</div>
+      </div>
+      <label class="toggle"><input type="checkbox" checked onchange="toggleMono(this,'ads')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="mcard enabled">
+      <span class="mcard-icon">⭐</span>
+      <div class="mcard-body">
+        <div class="mcard-title">In-App Purchases</div>
+        <div class="mcard-desc">Sell skins, power-ups, levels, and extra lives directly in your game.</div>
+        <div class="mcard-rev">70% revenue share</div>
+      </div>
+      <label class="toggle"><input type="checkbox" checked onchange="toggleMono(this,'iap')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="mcard">
+      <span class="mcard-icon">🔔</span>
+      <div class="mcard-body">
+        <div class="mcard-title">Game Pass</div>
+        <div class="mcard-desc">Offer a monthly subscription for unlimited plays + premium content.</div>
+        <div class="mcard-rev">85% revenue share</div>
+      </div>
+      <label class="toggle"><input type="checkbox" onchange="toggleMono(this,'pass')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="mcard">
+      <span class="mcard-icon">🎁</span>
+      <div class="mcard-body">
+        <div class="mcard-title">Tip Jar</div>
+        <div class="mcard-desc">Let fans support you with one-time tips from $1 to $50.</div>
+        <div class="mcard-rev">95% to you</div>
+      </div>
+      <label class="toggle"><input type="checkbox" onchange="toggleMono(this,'tips')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="mcard">
+      <span class="mcard-icon">🏆</span>
+      <div class="mcard-body">
+        <div class="mcard-title">Tournaments</div>
+        <div class="mcard-desc">Host paid entry tournaments. Keep 60% of the prize pool rake.</div>
+        <div class="mcard-rev">60% of entry fees</div>
+      </div>
+      <label class="toggle"><input type="checkbox" onchange="toggleMono(this,'tournament')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="mcard">
+      <span class="mcard-icon">🤝</span>
+      <div class="mcard-body">
+        <div class="mcard-title">Brand Deals</div>
+        <div class="mcard-desc">Get matched with brands who want to sponsor popular games.</div>
+        <div class="mcard-rev">Negotiated directly</div>
+      </div>
+      <label class="toggle"><input type="checkbox" onchange="toggleMono(this,'brand')"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div style="height:3rem"></div>
+</div>
+
+<!-- WITHDRAW MODAL -->
+<div class="wmodal" id="wmodal" onclick="closeMBg(event)">
+  <div class="wbox" style="position:relative">
+    <div class="wx" onclick="closeWithdraw()">✕</div>
+    <h2>💸 <span style="color:var(--g)">Withdraw</span></h2>
+    <p class="sub">Transfer your balance to your bank or PayPal.</p>
+    <div id="withdraw-step1">
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="w-amount" placeholder="0.00" step="0.01" min="10">
+      </div>
+      <div class="field">
+        <label>Payout Method</label>
+        <select id="w-method">
+          <option>PayPal</option>
+          <option>Bank Transfer (ACH)</option>
+          <option>Wise</option>
+          <option>Stripe Connect</option>
+          <option>Crypto (USDC)</option>
+        </select>
+      </div>
+      <div class="field" id="paypal-field">
+        <label>PayPal Email</label>
+        <input type="email" id="w-paypal" placeholder="your@paypal.com">
+      </div>
+      <div class="fee-note">Platform fee: 5% · Min withdrawal: $10 · Processing: 1–3 business days</div>
+      <div style="display:flex;gap:.7rem">
+        <button class="btn btn-g" style="flex:1;justify-content:center;padding:.85rem" onclick="processWithdraw()">Withdraw Now</button>
+        <button class="btn btn-o" style="padding:.85rem" onclick="closeWithdraw()">Cancel</button>
+      </div>
+    </div>
+    <div id="withdraw-step2" style="display:none;text-align:center;padding:1rem 0">
+      <div style="font-size:3.5rem;margin-bottom:1rem">✅</div>
+      <h3 style="font-family:var(--fd);font-size:1.8rem;letter-spacing:1px;color:var(--g);margin-bottom:.5rem">Withdrawal Requested!</h3>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">Your funds will arrive in 1–3 business days.</p>
+      <button class="btn btn-o" style="margin:0 auto;display:flex" onclick="closeWithdraw()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  EARNINGS DASHBOARD ENGINE
+// ══════════════════════════════════════
+
+// Simulated data — replace with real Supabase queries
+const DATA = {
+  '7d': {
+    revenue: 312.40, balance: 248.90, plays: 18420, rpm: 0.017, subs: 47, ads: 91000,
+    adRev: 198.50, subRev: 72.80, iapRev: 28.40, tipsRev: 12.70,
+    labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    revData: [38,44,52,61,48,57,72],
+    playsData: [2100,2400,2800,3100,2600,2900,3400],
+    refEarned: 67.20
+  },
+  '30d': {
+    revenue: 1247.80, balance: 986.40, plays: 74800, rpm: 0.0167, subs: 182, ads: 385000,
+    adRev: 792.40, subRev: 298.60, iapRev: 112.80, tipsRev: 44.00,
+    labels: ['W1','W2','W3','W4'],
+    revData: [280,310,340,317],
+    playsData: [17000,19000,21000,17800],
+    refEarned: 248.60
+  },
+  '90d': {
+    revenue: 3840.20, balance: 3012.80, plays: 228000, rpm: 0.0168, subs: 514, ads: 1200000,
+    adRev: 2420.50, subRev: 912.40, iapRev: 380.60, tipsRev: 126.70,
+    labels: ['Jan','Feb','Mar'],
+    revData: [1180,1320,1340],
+    playsData: [72000,78000,78000],
+    refEarned: 780.40
+  },
+  '1y': {
+    revenue: 12480.60, balance: 9840.20, plays: 780000, rpm: 0.016, subs: 1820, ads: 4200000,
+    adRev: 7840.20, subRev: 2980.40, iapRev: 1280.80, tipsRev: 379.20,
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    revData: [820,910,1040,1120,1180,1240,1180,1060,920,880,980,1150],
+    playsData: [58000,62000,68000,72000,76000,80000,74000,64000,60000,58000,62000,66000],
+    refEarned: 2460.80
+  }
+};
+
+const GAMES_DATA = [
+  { name:'Space Assault', genre:'Action', emoji:'🚀', bg:'#0d2240', plays:42000, revenue:284.20, rpm:0.0068, rating:4.9, trend:'+18%', trendUp:true, status:'live' },
+  { name:'Puzzle Kingdom', genre:'Puzzle', emoji:'🧩', bg:'#2e0855', plays:31400, revenue:198.60, rpm:0.0063, rating:4.7, trend:'+12%', trendUp:true, status:'live' },
+  { name:'Neon Racer', genre:'Racing', emoji:'🏎️', bg:'#1f0606', plays:28200, revenue:176.40, rpm:0.0063, rating:4.8, trend:'+9%', trendUp:true, status:'live' },
+  { name:'Dragon Quest', genre:'RPG', emoji:'🐉', bg:'#0c3020', plays:19600, revenue:148.80, rpm:0.0076, rating:4.6, trend:'-3%', trendUp:false, status:'live' },
+  { name:'Tower Wars', genre:'Strategy', emoji:'🏰', bg:'#382808', plays:12800, revenue:86.40, rpm:0.0068, rating:4.5, trend:'+22%', trendUp:true, status:'live' },
+  { name:'Shadow Run', genre:'Action', emoji:'🌑', bg:'#08183a', plays:8400, revenue:48.20, rpm:0.0057, rating:4.4, trend:'+5%', trendUp:true, status:'live' },
+  { name:'Crystal Caves', genre:'Platformer', emoji:'💎', bg:'#170617', plays:0, revenue:0, rpm:0, rating:0, trend:'—', trendUp:true, status:'draft' },
+  { name:'Sky Pirates', genre:'Shooter', emoji:'✈️', bg:'#1a0622', plays:0, revenue:0, rpm:0, rating:0, trend:'—', trendUp:true, status:'review' },
+];
+
+const PAYOUT_HISTORY = [
+  { icon:'✅', label:'May 2026 Payout', date:'May 1, 2026', amount:'$284.60', paid:true },
+  { icon:'✅', label:'Apr 2026 Payout', date:'Apr 1, 2026', amount:'$312.40', paid:true },
+  { icon:'✅', label:'Mar 2026 Payout', date:'Mar 1, 2026', amount:'$248.80', paid:true },
+  { icon:'⏳', label:'Jun 2026 Payout', date:'Jun 1, 2026 (upcoming)', amount:'~$340+', paid:false },
+];
+
+let currentRange = '7d';
+let revChart = null, pieChart = null, monthlyChart = null;
+
+function setRange(range, btn) {
+  currentRange = range;
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  loadData(range);
+}
+
+function loadData(range) {
+  const d = DATA[range] || DATA['7d'];
+
+  // Animate KPIs
+  animateCount('kv-revenue', d.revenue, '$', 2);
+  animateCount('kv-balance', d.balance, '$', 2);
+  animateCount('kv-plays', d.plays, '', 0, true);
+  animateVal('kv-rpm', '$' + d.rpm.toFixed(4));
+  animateCount('kv-subs', d.subs, '', 0, true);
+  animateCount('kv-ads', d.ads, '', 0, true);
+
+  // Revenue breakdown bars
+  const total = d.adRev + d.subRev + d.iapRev + d.tipsRev;
+  setTimeout(() => {
+    document.getElementById('bar-ads').style.width = (d.adRev/total*100)+'%';
+    document.getElementById('bar-subs').style.width = (d.subRev/total*100)+'%';
+    document.getElementById('bar-iap').style.width = (d.iapRev/total*100)+'%';
+    document.getElementById('bar-tips').style.width = (d.tipsRev/total*100)+'%';
+  }, 200);
+  document.getElementById('bv-ads').textContent = '$'+d.adRev.toFixed(0);
+  document.getElementById('bv-subs').textContent = '$'+d.subRev.toFixed(0);
+  document.getElementById('bv-iap').textContent = '$'+d.iapRev.toFixed(0);
+  document.getElementById('bv-tips').textContent = '$'+d.tipsRev.toFixed(0);
+
+  // Balance
+  document.getElementById('balance-amount').textContent = '$'+d.balance.toFixed(2);
+
+  // Referral
+  animateCount('ref-earned', d.refEarned, '$', 2);
+
+  updateCharts(d);
+}
+
+function animateCount(id, target, prefix='', decimals=0, abbrev=false) {
+  const el = document.getElementById(id); if (!el) return;
+  let start = 0; const dur = 800; const step = target / (dur / 16);
+  const iv = setInterval(() => {
+    start = Math.min(start + step, target);
+    let val;
+    if (abbrev && start >= 1000000) val = prefix + (start/1000000).toFixed(1)+'M';
+    else if (abbrev && start >= 1000) val = prefix + (start/1000).toFixed(0)+'K';
+    else val = prefix + start.toFixed(decimals);
+    el.textContent = val;
+    if (start >= target) clearInterval(iv);
+  }, 16);
+}
+function animateVal(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+function updateCharts(d) {
+  // Revenue line chart
+  if (revChart) revChart.destroy();
+  revChart = new Chart(document.getElementById('revenue-chart'), {
+    type: 'line',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Revenue ($)',
+        data: d.revData,
+        borderColor: '#00ffe1',
+        backgroundColor: 'rgba(0,255,225,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#00ffe1',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#5a6a7a', font: { family: 'JetBrains Mono', size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#5a6a7a', font: { family: 'JetBrains Mono', size: 10 }, callback: v => '$'+v } }
+      }
+    }
+  });
+
+  // Pie chart
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('pie-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Ad Revenue','Subscriptions','In-App','Tips'],
+      datasets: [{
+        data: [d.adRev, d.subRev, d.iapRev, d.tipsRev],
+        backgroundColor: ['#00ffe1','#ff2d6b','#ffd600','#00ff88'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend: { display: true, position: 'right', labels: { color: '#c8d8e8', font: { family: 'JetBrains Mono', size: 10 }, padding: 10 } } }
+    }
+  });
+
+  // Monthly bar chart
+  if (monthlyChart) monthlyChart.destroy();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun'];
+  const mRevs = [820,910,1040,1120,1180,1248];
+  monthlyChart = new Chart(document.getElementById('monthly-chart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        data: mRevs,
+        backgroundColor: mRevs.map((v,i) => i === mRevs.length-1 ? '#00ffe1' : 'rgba(0,255,225,0.3)'),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#5a6a7a', font: { family: 'JetBrains Mono', size: 9 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6a7a', font: { family: 'JetBrains Mono', size: 9 }, callback: v => '$'+v } }
+      }
+    }
+  });
+
+  document.getElementById('best-month-val').textContent = '$'+Math.max(...mRevs).toLocaleString();
+  document.getElementById('avg-month-val').textContent = '$'+Math.round(mRevs.reduce((a,b)=>a+b,0)/mRevs.length).toLocaleString();
+}
+
+function switchChartType(type, btn) {
+  document.querySelectorAll('#ct-rev,#ct-play').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const d = DATA[currentRange];
+  if (!revChart) return;
+  if (type === 'plays') {
+    revChart.data.datasets[0].data = d.playsData;
+    revChart.data.datasets[0].borderColor = '#ff2d6b';
+    revChart.data.datasets[0].backgroundColor = 'rgba(255,45,107,0.08)';
+    revChart.data.datasets[0].pointBackgroundColor = '#ff2d6b';
+    revChart.data.datasets[0].label = 'Plays';
+    revChart.options.scales.y.ticks.callback = v => v >= 1000 ? (v/1000).toFixed(0)+'K' : v;
+  } else {
+    revChart.data.datasets[0].data = d.revData;
+    revChart.data.datasets[0].borderColor = '#00ffe1';
+    revChart.data.datasets[0].backgroundColor = 'rgba(0,255,225,0.08)';
+    revChart.data.datasets[0].pointBackgroundColor = '#00ffe1';
+    revChart.data.datasets[0].label = 'Revenue ($)';
+    revChart.options.scales.y.ticks.callback = v => '$'+v;
+  }
+  revChart.update();
+}
+
+function renderGamesTable() {
+  document.getElementById('games-tbody').innerHTML = GAMES_DATA.map(g => `
+    <tr onclick="showGameDetail('${g.name}')">
+      <td><div class="game-cell">
+        <div class="game-icon" style="background:${g.bg}">${g.emoji}</div>
+        <div><div class="game-name">${g.name}</div><div class="game-genre">${g.genre}</div></div>
+      </div></td>
+      <td><span class="status-badge st-${g.status}">${g.status}</span></td>
+      <td style="font-family:var(--fm);font-size:.78rem">${g.plays > 0 ? g.plays.toLocaleString() : '—'}</td>
+      <td style="font-family:var(--fm);font-size:.82rem;color:var(--g)">${g.revenue > 0 ? '$'+g.revenue.toFixed(2) : '—'}</td>
+      <td style="font-family:var(--fm);font-size:.72rem;color:var(--muted)">${g.rpm > 0 ? '$'+g.rpm.toFixed(4) : '—'}</td>
+      <td style="color:var(--y)">${g.rating > 0 ? '★ '+g.rating : '—'}</td>
+      <td class="${g.trendUp?'trend-up':'trend-dn'}">${g.trend}</td>
+      <td><div style="display:flex;gap:.4rem">
+        <a href="creator.html" class="btn btn-o" style="font-size:.6rem;padding:.3rem .7rem">✏ Edit</a>
+        <button class="btn btn-c" style="font-size:.6rem;padding:.3rem .7rem" onclick="event.stopPropagation();showToast('📊 Analytics for ${g.name}')">📊</button>
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function renderPayoutHistory() {
+  document.getElementById('payout-history').innerHTML = PAYOUT_HISTORY.map(p => `
+    <div class="ph-item">
+      <div class="ph-left">
+        <span class="ph-icon">${p.icon}</span>
+        <div><div class="ph-label">${p.label}</div><div class="ph-date">${p.date}</div></div>
+      </div>
+      <span class="ph-amount ${p.paid?'paid':'pending'}">${p.amount}</span>
+    </div>
+  `).join('');
+}
+
+function showGameDetail(name) {
+  showToast(`📊 Loading analytics for "${name}"...`);
+}
+
+// WITHDRAWAL
+function openWithdraw() {
+  const d = DATA[currentRange];
+  document.getElementById('w-amount').value = d.balance.toFixed(2);
+  document.getElementById('withdraw-step1').style.display = '';
+  document.getElementById('withdraw-step2').style.display = 'none';
+  document.getElementById('wmodal').classList.add('on');
+}
+function closeWithdraw() { document.getElementById('wmodal').classList.remove('on'); }
+function closeMBg(e) { if (e.target === document.getElementById('wmodal')) closeWithdraw(); }
+
+function processWithdraw() {
+  const amt = parseFloat(document.getElementById('w-amount').value);
+  if (!amt || amt < 10) { showToast('⚠ Minimum withdrawal is $10', true); return; }
+  const method = document.getElementById('w-method').value;
+  document.getElementById('withdraw-step1').style.display = 'none';
+  document.getElementById('withdraw-step2').style.display = '';
+  showToast(`💸 $${amt.toFixed(2)} withdrawal via ${method} initiated!`);
+}
+
+// MONETIZATION TOGGLES
+function toggleMono(el, type) {
+  const card = el.closest('.mcard');
+  if (el.checked) {
+    card.classList.add('enabled');
+    showToast(`✅ ${type.toUpperCase()} monetization enabled!`);
+  } else {
+    card.classList.remove('enabled');
+    showToast(`⏸ ${type.toUpperCase()} monetization paused`);
+  }
+}
+
+function copyRef() {
+  const val = document.getElementById('ref-link').value;
+  navigator.clipboard?.writeText(val).then(() => showToast('📋 Referral link copied!')).catch(() => {});
+}
+
+function showToast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast'+(err?' err':'');
+  t.classList.add('on'); clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 3500);
+}
+
+// SCROLL REVEAL
+const io = new IntersectionObserver(es => {
+  es.forEach((e,i) => { if (e.isIntersecting) setTimeout(() => e.target.classList.add('vi'), i*70); });
+}, { threshold: 0.06 });
+document.querySelectorAll('.rv').forEach(el => io.observe(el));
+
+// Last updated
+setInterval(() => {
+  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+}, 30000);
+
+// INIT
+Chart.defaults.color = '#5a6a7a';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+loadData('7d');
+renderGamesTable();
+renderPayoutHistory();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+/* ═══════════════════════════════════
+   GoGo Games — shared.css
+   Final polish applied to all pages
+═══════════════════════════════════ */
+
+/* Page load fade-in */
+body { animation: pageIn 0.4s ease both; }
+@keyframes pageIn { from{opacity:0} to{opacity:1} }
+
+/* Focus outlines for accessibility */
+:focus-visible { outline: 2px solid #c8ff00; outline-offset: 3px; border-radius: 4px; }
+
+/* Smooth image rendering */
+img { image-rendering: auto; }
+
+/* Selection color */
+::selection { background: rgba(200,255,0,0.25); color: #f0f0f8; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #06060a; }
+::-webkit-scrollbar-thumb { background: rgba(200,255,0,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(200,255,0,0.4); }
+
+/* Active nav link highlight */
+.nav-links a.active { color: #c8ff00 !important; }
+
+/* Button press feel */
+.btn:active { transform: scale(0.97) !important; }
+
+/* Disabled state */
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* Mobile nav */
+@media(max-width:768px) {
+  nav { padding: 0 1.2rem; }
+  .nav-links { display: none !important; }
+  .btn-xl { padding: 0.85rem 1.8rem !important; font-size: 0.78rem !important; }
+}

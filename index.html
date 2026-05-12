@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="24 real browser games, drag-and-drop game creator, and real earnings. No downloads. No installs.">
+<meta name="theme-color" content="#c8ff00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<meta property="og:title" content="GoGo Games — Create, Play &amp; Compete">
+<meta property="og:description" content="24 real browser games, drag-and-drop game creator, and real earnings. No downloads. No installs.">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoGo Games — Create. Play. Compete.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Clash+Display:wght@400;500;600;700&family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+/* ═══════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════ */
+:root {
+  --ink: #06060a;
+  --ink2: #0c0c14;
+  --ink3: #12121e;
+  --ink4: #1a1a2e;
+  --lime: #c8ff00;
+  --lime2: #d4ff33;
+  --coral: #ff4d6d;
+  --sky: #00d4ff;
+  --purple: #9d4edd;
+  --gold: #ffb703;
+  --white: #f0f0f8;
+  --dim: #6b7280;
+  --dimmer: #374151;
+  --card: rgba(255,255,255,0.035);
+  --card2: rgba(255,255,255,0.065);
+  --stroke: rgba(255,255,255,0.08);
+  --stroke2: rgba(200,255,0,0.2);
+  --glow-lime: rgba(200,255,0,0.15);
+  --glow-coral: rgba(255,77,109,0.15);
+  --ff-display: 'Bebas Neue', cursive;
+  --ff-head: 'Clash Display', 'Space Grotesk', sans-serif;
+  --ff-body: 'Space Grotesk', sans-serif;
+  --ff-mono: 'DM Mono', monospace;
+  --r: 16px;
+  --r2: 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  background: var(--ink);
+  color: var(--white);
+  font-family: var(--ff-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9997;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  opacity: 0.5; mix-blend-mode: overlay;
+}
+
+/* ── CURSOR ── */
+#cursor {
+  position: fixed; z-index: 9998; pointer-events: none;
+  width: 8px; height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.05s, width 0.2s, height 0.2s, opacity 0.2s;
+  mix-blend-mode: exclusion;
+}
+#cursor-trail {
+  position: fixed; z-index: 9997; pointer-events: none;
+  width: 40px; height: 40px;
+  border: 1.5px solid rgba(200,255,0,0.35);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.12s ease, top 0.12s ease, width 0.25s, height 0.25s, opacity 0.25s;
+}
+body:has(a:hover) #cursor, body:has(button:hover) #cursor { width: 16px; height: 16px; }
+body:has(a:hover) #cursor-trail, body:has(button:hover) #cursor-trail { width: 56px; height: 56px; opacity: 0.5; }
+
+/* ═══════════════════════════════════════════
+   CANVAS PARTICLES
+═══════════════════════════════════════════ */
+#particle-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(1.5rem, 5vw, 4rem);
+  background: rgba(6,6,10,0.75);
+  backdrop-filter: blur(32px) saturate(1.8);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.logo {
+  display: flex; align-items: baseline; gap: 0.15rem;
+  text-decoration: none;
+}
+.logo-main {
+  font-family: var(--ff-display);
+  font-size: 1.65rem; letter-spacing: 4px;
+  color: var(--white); line-height: 1;
+}
+.logo-dot { color: var(--lime); }
+.logo-tag {
+  font-family: var(--ff-mono);
+  font-size: 0.5rem; letter-spacing: 4px;
+  text-transform: uppercase; color: var(--lime);
+  margin-left: 0.5rem; opacity: 0.8;
+  border: 1px solid rgba(200,255,0,0.3);
+  padding: 0.1rem 0.4rem; border-radius: 3px;
+  align-self: center;
+}
+
+.nav-links { display: flex; gap: 2.5rem; list-style: none; }
+.nav-links a {
+  font-size: 0.78rem; font-weight: 500; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--dim);
+  text-decoration: none; transition: color 0.2s;
+  font-family: var(--ff-mono);
+}
+.nav-links a:hover { color: var(--white); }
+
+.nav-end { display: flex; align-items: center; gap: 0.75rem; }
+#nav-auth { display: flex; gap: 0.6rem; align-items: center; }
+#nav-user { display: none; align-items: center; gap: 0.75rem; }
+#nav-user.on { display: flex; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--ff-mono); font-size: 0.72rem;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  border: none; cursor: pointer; border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  transition: all 0.2s; display: inline-flex;
+  align-items: center; gap: 0.4rem; font-weight: 500;
+  text-decoration: none;
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--stroke2);
+  color: var(--white);
+}
+.btn-ghost:hover { background: rgba(200,255,0,0.06); border-color: rgba(200,255,0,0.4); }
+.btn-lime {
+  background: var(--lime); color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(200,255,0,0.25);
+}
+.btn-lime:hover { background: var(--lime2); box-shadow: 0 0 40px rgba(200,255,0,0.4); transform: translateY(-1px); }
+.btn-coral { background: var(--coral); color: var(--white); }
+.btn-coral:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-xl { padding: 0.95rem 2.4rem; font-size: 0.82rem; border-radius: 12px; }
+.btn-block { width: 100%; justify-content: center; margin-top: 1rem; }
+
+.pill {
+  font-family: var(--ff-mono); font-size: 0.6rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 0.18rem 0.75rem; border-radius: 100px;
+  display: inline-block;
+}
+.pill-free { background: rgba(200,255,0,0.1); color: var(--lime); border: 1px solid rgba(200,255,0,0.25); }
+.pill-pro  { background: rgba(255,77,109,0.12); color: var(--coral); border: 1px solid rgba(255,77,109,0.3); }
+.pill-studio { background: rgba(255,183,3,0.1); color: var(--gold); border: 1px solid rgba(255,183,3,0.3); }
+
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--lime), var(--sky));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; color: var(--ink);
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.avatar:hover { border-color: var(--lime); transform: scale(1.05); }
+
+/* ═══════════════════════════════════════════
+   HERO — Fullscreen split layout
+═══════════════════════════════════════════ */
+.hero {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Left half */
+.hero-left {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 120px clamp(1.5rem, 6vw, 5rem) 80px;
+  position: relative;
+  border-right: 1px solid var(--stroke);
+}
+
+.hero-left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 80% at 0% 50%, rgba(200,255,0,0.05), transparent);
+  pointer-events: none;
+}
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--ff-mono); font-size: 0.68rem;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--lime); margin-bottom: 2rem;
+  opacity: 0; animation: slideRight 0.6s 0.1s ease forwards;
+}
+.eyebrow::before {
+  content: ''; width: 24px; height: 1px; background: var(--lime);
+}
+
+.hero-title {
+  font-family: var(--ff-display);
+  font-size: clamp(5.5rem, 10vw, 9.5rem);
+  line-height: 0.88; letter-spacing: 1px;
+  margin-bottom: 2.5rem;
+  opacity: 0; animation: slideRight 0.7s 0.2s ease forwards;
+}
+.hero-title .outline {
+  -webkit-text-stroke: 2px var(--white);
+  -webkit-text-fill-color: transparent;
+  display: block;
+}
+.hero-title .filled { color: var(--lime); display: block; }
+.hero-title .dim { color: var(--dimmer); display: block; }
+
+.hero-desc {
+  font-size: 1.05rem; line-height: 1.75; color: var(--dim);
+  max-width: 420px; margin-bottom: 2.5rem;
+  opacity: 0; animation: slideRight 0.7s 0.3s ease forwards;
+}
+.hero-desc strong { color: var(--white); font-weight: 600; }
+
+.hero-cta {
+  display: flex; gap: 0.8rem; flex-wrap: wrap;
+  opacity: 0; animation: slideRight 0.7s 0.4s ease forwards;
+  margin-bottom: 3.5rem;
+}
+
+.hero-stats {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 0; border: 1px solid var(--stroke);
+  border-radius: var(--r2); overflow: hidden;
+  opacity: 0; animation: slideRight 0.7s 0.5s ease forwards;
+}
+.hstat {
+  padding: 1.1rem 1.2rem;
+  border-right: 1px solid var(--stroke);
+  position: relative;
+}
+.hstat:last-child { border-right: none; }
+.hstat-n {
+  font-family: var(--ff-display);
+  font-size: 2rem; color: var(--lime); display: block; line-height: 1;
+  margin-bottom: 0.2rem;
+}
+.hstat-l {
+  font-family: var(--ff-mono); font-size: 0.6rem;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--dim);
+}
+
+/* Right half */
+.hero-right {
+  position: relative; overflow: hidden;
+  background: var(--ink2);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.hero-right::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 70% at 100% 50%, rgba(0,212,255,0.06), transparent);
+  pointer-events: none;
+}
+
+/* Big rotating ring */
+.ring-bg {
+  position: absolute; width: 600px; height: 600px;
+  border: 1px solid rgba(200,255,0,0.06);
+  border-radius: 50%;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: spin 30s linear infinite;
+}
+.ring-bg2 {
+  position: absolute; width: 440px; height: 440px;
+  border: 1px solid rgba(200,255,0,0.04);
+  border-radius: 50%;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: spin 20s linear infinite reverse;
+}
+/* Floating game cards */
+.float-cards {
+  position: relative; z-index: 2;
+  width: 340px;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.fcard {
+  background: var(--card2);
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  padding: 1.2rem 1.4rem;
+  display: flex; align-items: center; gap: 1.1rem;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative; overflow: hidden;
+}
+.fcard::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--lime);
+  transform: scaleY(0); transition: transform 0.3s;
+  transform-origin: bottom;
+}
+.fcard:hover { border-color: rgba(200,255,0,0.3); transform: translateX(6px); }
+.fcard:hover::before { transform: scaleY(1); }
+.fcard:nth-child(2) { transform: translateX(20px); }
+.fcard:nth-child(2):hover { transform: translateX(26px); }
+.fcard:nth-child(3)::before { background: var(--coral); }
+.fcard:nth-child(4)::before { background: var(--sky); }
+.fcard-thumb {
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; flex-shrink: 0;
+}
+.ft1 { background: linear-gradient(135deg,#061830,#0d3060); }
+.ft2 { background: linear-gradient(135deg,#180620,#3a0a50); }
+.ft3 { background: linear-gradient(135deg,#1e0606,#400a0a); }
+.ft4 { background: linear-gradient(135deg,#041810,#083020); }
+.fcard-info { flex: 1; min-width: 0; }
+.fcard-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
+.fcard-meta { display: flex; align-items: center; gap: 0.6rem; }
+.fcard-genre { font-family: var(--ff-mono); font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+.fcard-rating { font-size: 0.72rem; color: var(--gold); }
+.fcard-action { flex-shrink: 0; }
+.play-circle {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--lime); color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; border: none;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.play-circle:hover { background: var(--lime2); transform: scale(1.1); box-shadow: 0 0 20px rgba(200,255,0,0.4); }
+
+/* Hero scroll indicator */
+.scroll-hint {
+  position: absolute; bottom: 2rem; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--ff-mono); font-size: 0.6rem;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--dim); display: flex; flex-direction: column;
+  align-items: center; gap: 0.5rem; z-index: 3;
+}
+.scroll-line {
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, var(--lime), transparent);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   TICKER
+═══════════════════════════════════════════ */
+.ticker {
+  position: relative; z-index: 2;
+  background: var(--lime); color: var(--ink);
+  padding: 0.7rem 0; overflow: hidden;
+}
+.ticker-inner {
+  display: flex; gap: 3rem; white-space: nowrap;
+  animation: tick 22s linear infinite;
+  width: max-content;
+}
+.ticker-item {
+  font-family: var(--ff-display); font-size: 1.1rem;
+  letter-spacing: 3px; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 1.5rem;
+}
+.ticker-sep { opacity: 0.4; font-size: 1.2rem; }
+@keyframes tick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* ═══════════════════════════════════════════
+   SECTIONS
+═══════════════════════════════════════════ */
+.section { position: relative; z-index: 2; padding: 100px clamp(1.5rem,5vw,4rem); }
+.section-bg2 { background: var(--ink2); }
+.section-bg3 { background: var(--ink3); }
+
+.section-label {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--ff-mono); font-size: 0.65rem;
+  letter-spacing: 4px; text-transform: uppercase;
+  color: var(--lime); margin-bottom: 1.2rem;
+}
+.section-label::before { content:''; width:16px; height:1px; background:var(--lime); }
+.section-h {
+  font-family: var(--ff-display);
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  line-height: 0.92; letter-spacing: 1px;
+  margin-bottom: 1.2rem;
+}
+.section-sub {
+  color: var(--dim); font-size: 1rem; line-height: 1.75;
+  max-width: 520px;
+}
+
+/* ═══════════════════════════════════════════
+   STATS BELT
+═══════════════════════════════════════════ */
+.stats-belt {
+  position: relative; z-index: 2;
+  background: var(--ink3);
+  border-top: 1px solid var(--stroke);
+  border-bottom: 1px solid var(--stroke);
+}
+.stats-belt-inner {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  max-width: 1100px; margin: 0 auto;
+}
+.sbi {
+  padding: 3rem 1.5rem; text-align: center; position: relative;
+  transition: background 0.3s;
+}
+.sbi:hover { background: rgba(200,255,0,0.025); }
+.sbi:not(:last-child)::after {
+  content:''; position:absolute; right:0; top:25%; bottom:25%;
+  width:1px; background:var(--stroke);
+}
+.sbi-n {
+  font-family: var(--ff-display);
+  font-size: 3.8rem; color: var(--lime);
+  display: block; line-height: 1; margin-bottom: 0.4rem;
+}
+.sbi-l {
+  font-family: var(--ff-mono); font-size: 0.62rem;
+  letter-spacing: 3px; color: var(--dim); text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+#dashboard { display: none; background: var(--ink3); border-top: 1px solid var(--stroke); border-bottom: 1px solid var(--stroke); }
+#dashboard.on { display: block; }
+.dash-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.dash-greeting { font-family: var(--ff-display); font-size: clamp(2rem,4vw,3.5rem); letter-spacing: 1px; line-height: 1; }
+.dash-greeting span { color: var(--lime); }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 1rem; max-width: 1100px; margin: 0 auto 1.5rem; }
+.dcard { background: var(--card2); border: 1px solid var(--stroke); border-radius: var(--r2); padding: 1.4rem 1.6rem; transition: border-color 0.2s; }
+.dcard:hover { border-color: var(--stroke2); }
+.dcard-l { font-family: var(--ff-mono); font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 0.5rem; }
+.dcard-v { font-family: var(--ff-display); font-size: 2.4rem; color: var(--lime); line-height: 1; }
+.dcard-v.sm { font-size: 0.85rem; font-family: var(--ff-body); color: var(--dim); word-break: break-all; margin-top: 0.3rem; }
+
+/* ═══════════════════════════════════════════
+   GAMES SECTION
+═══════════════════════════════════════════ */
+.games-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2.5rem;
+}
+.games-header-left { max-width: 500px; }
+
+.filter-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  flex-wrap: wrap; margin-bottom: 1.8rem;
+}
+.search-wrap {
+  position: relative; flex: 1; min-width: 200px; max-width: 320px;
+}
+.search-wrap svg {
+  position: absolute; left: 0.9rem; top: 50%;
+  transform: translateY(-50%); width: 14px; height: 14px;
+  color: var(--dim); pointer-events: none;
+}
+.gsearch {
+  width: 100%;
+  background: var(--card2); border: 1px solid var(--stroke);
+  border-radius: 10px; padding: 0.6rem 1rem 0.6rem 2.4rem;
+  color: var(--white); font-family: var(--ff-body); font-size: 0.88rem;
+  outline: none; transition: border-color 0.2s;
+}
+.gsearch:focus { border-color: var(--stroke2); }
+.gsearch::placeholder { color: var(--dimmer); }
+
+.ftab {
+  font-family: var(--ff-mono); font-size: 0.65rem; letter-spacing: 2px;
+  text-transform: uppercase; padding: 0.45rem 1rem;
+  border: 1px solid var(--stroke); border-radius: 8px;
+  background: transparent; color: var(--dim);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.ftab.on, .ftab:hover { border-color: var(--lime); color: var(--lime); background: rgba(200,255,0,0.05); }
+
+/* Game grid — masonry-feel asymmetric */
+.ggrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+  gap: 1.2rem;
+  max-width: 1300px; margin: 0 auto;
+}
+.gcard {
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r2);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative; display: flex; flex-direction: column;
+}
+.gcard::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(200,255,0,0.03), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.gcard:hover { transform: translateY(-8px); border-color: rgba(200,255,0,0.25); box-shadow: 0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,255,0,0.1); }
+.gcard:hover::after { opacity: 1; }
+
+.gcard-thumb {
+  height: 155px; display: flex; align-items: center;
+  justify-content: center; font-size: 4rem; position: relative;
+  overflow: hidden; flex-shrink: 0;
+}
+.gcard-thumb::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6));
+}
+.ga { background: linear-gradient(135deg,#040e1c,#082240); }
+.gb { background: linear-gradient(135deg,#120418,#280840); }
+.gc { background: linear-gradient(135deg,#1a0404,#380808); }
+.gd { background: linear-gradient(135deg,#04140a,#082418); }
+.ge { background: linear-gradient(135deg,#141004,#2a2008); }
+.gf { background: linear-gradient(135deg,#040814,#081830); }
+.gg { background: linear-gradient(135deg,#120418,#240830); }
+.gh { background: linear-gradient(135deg,#041610,#082a20); }
+
+.gcard-body { padding: 1.1rem 1.3rem 1.3rem; flex: 1; display: flex; flex-direction: column; }
+.gcard-genre { font-family: var(--ff-mono); font-size: 0.58rem; letter-spacing: 3px; color: var(--lime); text-transform: uppercase; margin-bottom: 0.3rem; }
+.gcard-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; line-height: 1.2; }
+.gcard-meta { display: flex; align-items: center; justify-content: space-between; color: var(--dim); font-size: 0.78rem; font-family: var(--ff-mono); margin-bottom: 1rem; }
+.gcard-stars { color: var(--gold); font-size: 0.7rem; }
+.gcard-footer { display: flex; gap: 0.5rem; align-items: center; margin-top: auto; }
+.gcard-footer .btn { flex: 1; }
+.wish { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--stroke); background: transparent; color: var(--dim); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.wish:hover, .wish.on { border-color: var(--coral); color: var(--coral); }
+.wish.on { background: rgba(255,77,109,0.1); }
+.badge-live { position: absolute; top: 10px; left: 10px; z-index: 2; background: var(--coral); color: var(--white); font-family: var(--ff-mono); font-size: 0.55rem; letter-spacing: 2px; padding: 0.18rem 0.6rem; border-radius: 4px; text-transform: uppercase; }
+.badge-new { position: absolute; top: 10px; left: 10px; z-index: 2; background: var(--lime); color: var(--ink); font-family: var(--ff-mono); font-size: 0.55rem; letter-spacing: 2px; padding: 0.18rem 0.6rem; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
+
+/* ═══════════════════════════════════════════
+   HOW IT WORKS — diagonal layout
+═══════════════════════════════════════════ */
+.how-wrap { max-width: 1100px; margin: 0 auto; }
+.how-steps {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 0; position: relative;
+}
+.how-steps::before {
+  content: '';
+  position: absolute; top: 40px; left: calc(12.5% + 24px); right: calc(12.5% + 24px);
+  height: 1px; background: linear-gradient(90deg, var(--lime), var(--sky), var(--coral), var(--purple));
+  z-index: 0;
+}
+.hstep { padding: 0 1.5rem; text-align: center; position: relative; z-index: 1; }
+.hstep-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--ink2); border: 2px solid var(--stroke2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--ff-display); font-size: 1.4rem; color: var(--lime);
+  margin: 0 auto 1.5rem;
+  transition: all 0.3s;
+}
+.hstep:hover .hstep-num { background: var(--lime); color: var(--ink); border-color: var(--lime); transform: scale(1.1); }
+.hstep-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+.hstep h3 { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; }
+.hstep p { color: var(--dim); font-size: 0.85rem; line-height: 1.65; }
+
+/* ═══════════════════════════════════════════
+   COMMUNITY — editorial split
+═══════════════════════════════════════════ */
+.comm-split {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; max-width: 100%; overflow: hidden;
+}
+.comm-left-panel {
+  background: var(--lime);
+  color: var(--ink);
+  padding: clamp(3rem,8vw,7rem) clamp(2rem,6vw,5rem);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.comm-left-panel .section-label { color: rgba(6,6,10,0.5); }
+.comm-left-panel .section-label::before { background: rgba(6,6,10,0.5); }
+.comm-left-panel .section-h { color: var(--ink); }
+.comm-left-panel .section-sub { color: rgba(6,6,10,0.65); }
+.comm-right-panel {
+  background: var(--ink3);
+  padding: clamp(3rem,8vw,7rem) clamp(2rem,6vw,5rem);
+  display: flex; flex-direction: column; gap: 1rem;
+  justify-content: center;
+}
+.comm-card {
+  background: var(--card2); border: 1px solid var(--stroke);
+  border-radius: var(--r2); padding: 1.4rem 1.6rem;
+  display: flex; align-items: center; gap: 1.1rem;
+  transition: all 0.3s;
+}
+.comm-card:hover { border-color: rgba(200,255,0,0.25); transform: translateX(6px); }
+.comm-icon { font-size: 2rem; flex-shrink: 0; }
+.comm-card h4 { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; }
+.comm-card p { color: var(--dim); font-size: 0.82rem; line-height: 1.5; }
+.comm-cta { margin-top: 1rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════
+   PRICING
+═══════════════════════════════════════════ */
+.pricing-wrap { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; max-width: 960px; margin: 3rem auto 0; }
+.pcard {
+  background: var(--card); border: 1px solid var(--stroke);
+  border-radius: var(--r2); padding: 2.3rem 2rem;
+  position: relative; transition: all 0.3s;
+}
+.pcard.hot {
+  background: var(--lime); color: var(--ink);
+  border-color: var(--lime);
+}
+.pcard:not(.hot):hover { border-color: var(--stroke2); transform: translateY(-6px); }
+.pcard.hot:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(200,255,0,0.2); }
+.pcard-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--lime); font-family: var(--ff-mono); font-size: 0.58rem; letter-spacing: 3px; text-transform: uppercase; padding: 0.25rem 1rem; border-radius: 100px; white-space: nowrap; border: 1px solid var(--stroke2); }
+.pcard.hot .pcard-tag { background: var(--ink); color: var(--lime); }
+.pcard-name { font-family: var(--ff-mono); font-size: 0.65rem; letter-spacing: 4px; text-transform: uppercase; color: var(--dim); margin-bottom: 1.2rem; }
+.pcard.hot .pcard-name { color: rgba(6,6,10,0.55); }
+.pcard-price { font-family: var(--ff-display); font-size: 4.8rem; line-height: 1; margin-bottom: 0.2rem; }
+.pcard.hot .pcard-price { color: var(--ink); }
+.pcard-period { font-family: var(--ff-mono); font-size: 0.68rem; color: var(--dim); margin-bottom: 2rem; letter-spacing: 1px; }
+.pcard.hot .pcard-period { color: rgba(6,6,10,0.55); }
+.pcard-feats { list-style: none; margin-bottom: 2rem; }
+.pcard-feats li { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; color: var(--dim); }
+.pcard.hot .pcard-feats li { border-color: rgba(6,6,10,0.1); color: rgba(6,6,10,0.75); }
+.pcard-feats .ck { color: var(--lime); font-size: 0.75rem; flex-shrink: 0; }
+.pcard.hot .pcard-feats .ck { color: var(--ink); font-weight: 900; }
+.pcard .btn-block { background: var(--card2); border: 1px solid var(--stroke2); color: var(--white); }
+.pcard .btn-block:hover { background: var(--lime); border-color: var(--lime); color: var(--ink); }
+.pcard.hot .btn-block { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+.pcard.hot .btn-block:hover { background: var(--ink2); }
+
+/* ═══════════════════════════════════════════
+   TESTIMONIALS
+═══════════════════════════════════════════ */
+.tgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.3rem; max-width: 1100px; margin: 3rem auto 0; }
+.tcard {
+  background: var(--card); border: 1px solid var(--stroke);
+  border-radius: var(--r2); padding: 2rem;
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.tcard::before {
+  content: '"';
+  position: absolute; top: -10px; right: 1rem;
+  font-family: Georgia, serif; font-size: 8rem; line-height: 1;
+  color: rgba(200,255,0,0.04); pointer-events: none;
+}
+.tcard:hover { border-color: rgba(200,255,0,0.15); transform: translateY(-4px); }
+.tcard p { color: var(--dim); line-height: 1.75; font-size: 0.9rem; margin-bottom: 1.5rem; }
+.tcard-author { display: flex; align-items: center; gap: 0.8rem; }
+.tcard-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: var(--ink); flex-shrink: 0; }
+.tcard-name { font-weight: 600; font-size: 0.9rem; }
+.tcard-role { font-family: var(--ff-mono); font-size: 0.62rem; color: var(--dim); margin-top: 0.1rem; letter-spacing: 1px; }
+
+/* ═══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+footer {
+  position: relative; z-index: 2;
+  background: var(--ink); border-top: 1px solid var(--stroke);
+  padding: 5rem clamp(1.5rem,5vw,4rem) 2.5rem;
+}
+.footer-top {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 4rem; max-width: 1100px; margin: 0 auto 4rem;
+}
+.footer-brand-name {
+  font-family: var(--ff-display); font-size: 2.5rem;
+  letter-spacing: 3px; color: var(--lime); display: block; margin-bottom: 0.8rem;
+}
+.footer-brand p { color: var(--dim); font-size: 0.88rem; line-height: 1.7; margin-bottom: 1.5rem; max-width: 260px; }
+.footer-col h5 { font-family: var(--ff-mono); font-size: 0.62rem; letter-spacing: 4px; text-transform: uppercase; color: var(--lime); margin-bottom: 1.2rem; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
+.footer-col a { color: var(--dim); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+.footer-col a:hover { color: var(--white); }
+.footer-bottom {
+  border-top: 1px solid var(--stroke); padding-top: 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem; max-width: 1100px; margin: 0 auto;
+}
+.footer-bottom p { color: var(--dimmer); font-family: var(--ff-mono); font-size: 0.72rem; }
+.footer-status { display: flex; align-items: center; gap: 0.5rem; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); animation: statusPulse 2s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════
+   GAME PLAYER
+═══════════════════════════════════════════ */
+.player-ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 800; flex-direction: column; }
+.player-ov.on { display: flex; }
+.player-hd { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.8rem; background: var(--ink2); border-bottom: 1px solid var(--stroke); flex-shrink: 0; }
+.player-title { font-family: var(--ff-display); font-size: 1.4rem; letter-spacing: 2px; color: var(--lime); }
+.player-x { width: 34px; height: 34px; border-radius: 8px; background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--coral); font-size: 1rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.player-x:hover { background: var(--coral); color: var(--white); }
+.player-bd { flex: 1; position: relative; overflow: hidden; }
+.player-bd iframe { width: 100%; height: 100%; border: none; display: block; }
+.player-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; background: var(--ink); }
+.spin-ring { width: 56px; height: 56px; border: 2px solid var(--stroke); border-top-color: var(--lime); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.spin-label { font-family: var(--ff-display); font-size: 1.2rem; letter-spacing: 4px; color: var(--dim); }
+
+/* ═══════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════ */
+.modal-ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 700; align-items: center; justify-content: center; padding: 1rem; }
+.modal-ov.on { display: flex; }
+.modal-box { background: var(--ink2); border: 1px solid var(--stroke); border-radius: var(--r2); padding: 2.5rem; width: 100%; max-width: 420px; max-height: 92vh; overflow-y: auto; position: relative; animation: scaleIn 0.25s ease; }
+.modal-x { position: absolute; top: 1.2rem; right: 1.2rem; width: 30px; height: 30px; background: var(--card2); border: 1px solid var(--stroke); border-radius: 6px; color: var(--dim); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 0.9rem; }
+.modal-x:hover { border-color: var(--coral); color: var(--coral); }
+.modal-box h2 { font-family: var(--ff-display); font-size: 2.2rem; letter-spacing: 1px; margin-bottom: 0.4rem; }
+.modal-sub { color: var(--dim); font-size: 0.88rem; margin-bottom: 2rem; }
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-family: var(--ff-mono); font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); margin-bottom: 0.45rem; }
+.field input { width: 100%; padding: 0.72rem 1rem; background: rgba(255,255,255,0.04); border: 1px solid var(--stroke); border-radius: 10px; color: var(--white); font-family: var(--ff-body); font-size: 0.92rem; outline: none; transition: border-color 0.2s; }
+.field input:focus { border-color: var(--stroke2); }
+.ferr { background: rgba(255,77,109,0.08); border: 1px solid rgba(255,77,109,0.22); color: var(--coral); font-size: 0.8rem; padding: 0.45rem 0.75rem; border-radius: 8px; margin-top: 0.4rem; display: none; }
+.ferr.on { display: block; }
+.msw { text-align: center; color: var(--dim); font-size: 0.85rem; margin-top: 0.9rem; }
+.msw a { color: var(--lime); cursor: pointer; }
+#sce { padding: 0.8rem 1rem; background: rgba(255,255,255,0.04); border: 1px solid var(--stroke); border-radius: 10px; }
+#serr { color: var(--coral); font-size: 0.8rem; margin-top: 0.4rem; min-height: 1rem; font-family: var(--ff-mono); }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+.toast { position: fixed; bottom: 1.8rem; right: 1.8rem; background: var(--ink2); border: 1px solid rgba(200,255,0,0.4); color: var(--white); padding: 0.9rem 1.4rem; border-radius: 12px; font-size: 0.82rem; font-family: var(--ff-mono); z-index: 900; opacity: 0; transform: translateY(14px) scale(0.97); transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; max-width: 300px; letter-spacing: 0.5px; box-shadow: 0 16px 36px rgba(0,0,0,0.5); }
+.toast.on { opacity: 1; transform: translateY(0) scale(1); }
+.toast.err { border-color: rgba(255,77,109,0.5); }
+
+/* ═══════════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════════ */
+.rv { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.rv.vi { opacity: 1; transform: translateY(0); }
+.rv.left { transform: translateX(-28px); }
+.rv.left.vi { transform: translateX(0); }
+.rv.right { transform: translateX(28px); }
+.rv.right.vi { transform: translateX(0); }
+
+/* ═══════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════ */
+@keyframes slideRight { from{opacity:0;transform:translateX(-24px)} to{opacity:1;transform:translateX(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes scaleIn { from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
+@keyframes scrollPulse { 0%,100%{opacity:0.3;transform:scaleY(0.7)} 50%{opacity:1;transform:scaleY(1)} }
+@keyframes statusPulse { 0%,100%{opacity:1;box-shadow:0 0 6px var(--lime)} 50%{opacity:0.5;box-shadow:0 0 2px var(--lime)} }
+@keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes float2 { 0%,100%{transform:translateX(20px) translateY(0)} 50%{transform:translateX(20px) translateY(-8px)} }
+
+/* Float animations for hero cards */
+.fcard:nth-child(1) { animation: float1 6s ease-in-out infinite; }
+.fcard:nth-child(2) { animation: float2 7s ease-in-out infinite 0.5s; }
+.fcard:nth-child(3) { animation: float1 8s ease-in-out infinite 1s; }
+.fcard:nth-child(4) { animation: float2 6.5s ease-in-out infinite 1.5s; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media(max-width:1024px) {
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .hero-left { border-right: none; border-bottom: 1px solid var(--stroke); padding-bottom: 3rem; }
+  .hero-right { min-height: 400px; }
+  .how-steps { grid-template-columns: repeat(2,1fr); gap: 2rem; }
+  .how-steps::before { display: none; }
+  .comm-split { grid-template-columns: 1fr; }
+  .pricing-wrap { grid-template-columns: 1fr; }
+  .tgrid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:768px) {
+  .nav-links { display: none; }
+  .stats-belt-inner { grid-template-columns: repeat(2,1fr); }
+  .how-steps { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr; }
+}
+@media(max-width:480px) {
+  .hero-stats { grid-template-columns: 1fr; }
+  .stats-belt-inner { grid-template-columns: 1fr 1fr; }
+  .dgrid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+<canvas id="particle-canvas"></canvas>
+
+<!-- ══════════ NAV ══════════ -->
+<nav>
+  <a class="logo" href="#">
+    <span class="logo-main">GOGO<span class="logo-dot">.</span></span>
+    <span class="logo-tag">GAMES</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#games">Play</a></li>
+    <li><a href="#create">Create</a></li>
+    <li><a href="#community">Community</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="earnings.html">Earnings</a></li>
+  </ul>
+  <div class="nav-end">
+    <div id="nav-auth">
+      <button class="btn btn-ghost" onclick="openModal('login')">Login</button>
+      <button class="btn btn-lime" onclick="openModal('signup')">Sign Up Free</button>
+    </div>
+    <div id="nav-user">
+      <span id="npill" class="pill pill-free">Free</span>
+      <div class="avatar" id="nav-av" onclick="openModal('account')">G</div>
+      <button class="btn btn-ghost" onclick="doLogout()">Exit</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero">
+  <!-- LEFT -->
+  <div class="hero-left">
+    <div class="eyebrow">Lag-free gaming platform</div>
+    <h1 class="hero-title">
+      <span class="filled">CREATE</span>
+      <span class="outline">PLAY &</span>
+      <span class="dim">COMPETE</span>
+    </h1>
+    <p class="hero-desc">
+      <strong>24 real browser games.</strong> A full drag-and-drop game creator. Real-time earnings. No downloads. No installs. Just pure gaming.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-lime btn-xl" onclick="openModal('signup')">Start for Free →</button>
+      <a href="#games" class="btn btn-ghost btn-xl">Browse 24 Games</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><span class="hstat-n" data-t="24">0</span><span class="hstat-l">Games</span></div>
+      <div class="hstat"><span class="hstat-n" data-t="2400">0</span><span class="hstat-l">K+ Players</span></div>
+      <div class="hstat"><span class="hstat-n" data-t="140">0</span><span class="hstat-l">Countries</span></div>
+    </div>
+  </div>
+  <!-- RIGHT -->
+  <div class="hero-right">
+    <div class="ring-bg"></div>
+    <div class="ring-bg2"></div>
+    <div class="float-cards">
+      <div class="fcard" onclick="launchGame('Chess','https://playpager.com/embed/chess/index.html')">
+        <div class="fcard-thumb ft1">♟️</div>
+        <div class="fcard-info">
+          <div class="fcard-title">Chess</div>
+          <div class="fcard-meta">
+            <span class="fcard-genre">Strategy</span>
+            <span class="fcard-rating">★★★★★</span>
+          </div>
+        </div>
+        <button class="play-circle">▶</button>
+      </div>
+      <div class="fcard" onclick="launchGame('Sudoku','https://playpager.com/embed/sudoku/index.html')">
+        <div class="fcard-thumb ft2">🔢</div>
+        <div class="fcard-info">
+          <div class="fcard-title">Sudoku</div>
+          <div class="fcard-meta">
+            <span class="fcard-genre">Puzzle</span>
+            <span class="fcard-rating">★★★★★</span>
+          </div>
+        </div>
+        <button class="play-circle">▶</button>
+      </div>
+      <div class="fcard" onclick="launchGame('Snake Classic','https://playsnake.org/')">
+        <div class="fcard-thumb ft3">🐍</div>
+        <div class="fcard-info">
+          <div class="fcard-title">Snake Classic</div>
+          <div class="fcard-meta">
+            <span class="fcard-genre">Arcade</span>
+            <span class="fcard-rating">★★★★☆</span>
+          </div>
+        </div>
+        <button class="play-circle">▶</button>
+      </div>
+      <div class="fcard" onclick="launchGame('Dino Runner','https://chromedino.com/')">
+        <div class="fcard-thumb ft4">🦕</div>
+        <div class="fcard-info">
+          <div class="fcard-title">Dino Runner</div>
+          <div class="fcard-meta">
+            <span class="fcard-genre">Arcade</span>
+            <span class="fcard-rating">★★★★★</span>
+          </div>
+        </div>
+        <button class="play-circle">▶</button>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    SCROLL
+  </div>
+</section>
+
+<!-- ══════════ TICKER ══════════ -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item">Chess<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Sudoku<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Solitaire<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Snake<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Dino Runner<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">2048<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Minesweeper<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Mahjong<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Wordle<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Pac-Man<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Flappy Bird<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Checkers<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Chess<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Sudoku<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Solitaire<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Snake<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Dino Runner<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">2048<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Minesweeper<span class="ticker-sep">✦</span></span>
+    <span class="ticker-item">Mahjong<span class="ticker-sep">✦</span></span>
+  </div>
+</div>
+
+<!-- ══════════ STATS ══════════ -->
+<section class="stats-belt" style="padding:0">
+  <div class="stats-belt-inner">
+    <div class="sbi rv"><span class="sbi-n" data-t="24">0</span><span class="sbi-l">Real Games</span></div>
+    <div class="sbi rv"><span class="sbi-n" data-t="2400">0</span><span class="sbi-l">K+ Players</span></div>
+    <div class="sbi rv"><span class="sbi-n" data-t="999">0</span><span class="sbi-l">% Uptime</span></div>
+    <div class="sbi rv"><span class="sbi-n" data-t="140">0</span><span class="sbi-l">Countries</span></div>
+  </div>
+</section>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<section class="section section-bg3" id="dashboard">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="dash-top">
+      <div>
+        <div class="section-label">My Space</div>
+        <div class="dash-greeting">HEY, <span id="dname">PLAYER</span> 👋</div>
+      </div>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <a href="earnings.html" class="btn btn-lime">💰 Earnings</a>
+        <a href="creator.html" class="btn btn-ghost">✏ Creator</a>
+        <button class="btn btn-ghost" onclick="openModal('upgrade')">⬆ Upgrade</button>
+        <button class="btn btn-ghost" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+    <div class="dgrid">
+      <div class="dcard"><div class="dcard-l">Plan</div><div class="dcard-v" id="dp">Free</div><div id="dpill" class="pill pill-free" style="margin-top:.5rem">Starter</div></div>
+      <div class="dcard"><div class="dcard-l">Games Played</div><div class="dcard-v" id="dpl">0</div></div>
+      <div class="dcard"><div class="dcard-l">Member Since</div><div style="font-family:var(--ff-display);font-size:1.2rem;color:var(--white);margin-top:.2rem" id="ds">—</div></div>
+      <div class="dcard"><div class="dcard-l">Account</div><div class="dcard-v sm" id="de">—</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ GAMES ══════════ -->
+<section class="section section-bg2" id="games">
+  <div class="games-header">
+    <div class="games-header-left">
+      <div class="section-label">24 Real Games</div>
+      <h2 class="section-h">PLAY<br><span style="color:var(--lime)">NOW</span></h2>
+    </div>
+    <p class="section-sub" style="max-width:340px">Every game loads instantly in your browser. No downloads, no installs. Click and go.</p>
+  </div>
+
+  <div class="filter-row">
+    <div class="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="gsearch" type="text" placeholder="Search games..." oninput="gsearch(this.value)">
+    </div>
+    <button class="ftab on" onclick="filterG('all',this)">All</button>
+    <button class="ftab" onclick="filterG('board',this)">Board</button>
+    <button class="ftab" onclick="filterG('puzzle',this)">Puzzle</button>
+    <button class="ftab" onclick="filterG('arcade',this)">Arcade</button>
+    <button class="ftab" onclick="filterG('cards',this)">Cards</button>
+    <button class="ftab" onclick="filterG('word',this)">Word</button>
+    <button class="ftab" onclick="filterG('action',this)">Action</button>
+  </div>
+
+  <div class="ggrid" id="ggrid">
+    <!-- BOARD -->
+    <div class="gcard rv" data-g="board" data-n="chess"><div class="badge-live">HOT</div><div class="gcard-thumb ga">♟️</div><div class="gcard-body"><div class="gcard-genre">Board</div><div class="gcard-title">Chess</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>vs Computer</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Chess','https://playpager.com/embed/chess/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="board" data-n="checkers"><div class="gcard-thumb gb">🔴</div><div class="gcard-body"><div class="gcard-genre">Board</div><div class="gcard-title">Checkers</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>vs Computer</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Checkers','https://playpager.com/embed/checkers/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="board" data-n="reversi othello"><div class="gcard-thumb gc">⚫</div><div class="gcard-body"><div class="gcard-genre">Board</div><div class="gcard-title">Othello Reversi</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Classic Strategy</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Othello','https://playpager.com/embed/reversi/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="board" data-n="backgammon dice"><div class="gcard-thumb gd">🎲</div><div class="gcard-body"><div class="gcard-genre">Board</div><div class="gcard-title">Backgammon</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Classic Dice</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Backgammon','https://playpager.com/embed/backgammon/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <!-- PUZZLE -->
+    <div class="gcard rv" data-g="puzzle" data-n="sudoku numbers"><div class="badge-live">HOT</div><div class="gcard-thumb ge">🔢</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">Sudoku</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>200K plays</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Sudoku','https://playpager.com/embed/sudoku/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="puzzle" data-n="falling cubes tetris blocks"><div class="gcard-thumb gf">🟦</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">Falling Cubes</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Tetris-style</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Falling Cubes','https://playpager.com/embed/cubes/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="puzzle" data-n="2048 merge numbers"><div class="gcard-thumb ga">🔢</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">2048</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Number Merge</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('2048','https://play2048.co/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="puzzle" data-n="minesweeper mines bombs"><div class="gcard-thumb gb">💣</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">Minesweeper</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Classic Logic</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Minesweeper','https://minesweeper.online/game/beginner')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="puzzle" data-n="mahjong tiles match"><div class="badge-new">NEW</div><div class="gcard-thumb gc">🀄</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">Mahjong Tiles</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Match & Clear</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Mahjong','https://www.mahjong.io/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="puzzle" data-n="jigsaw puzzle pieces image"><div class="gcard-thumb gd">🧩</div><div class="gcard-body"><div class="gcard-genre">Puzzle</div><div class="gcard-title">Jigsaw Puzzles</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Relaxing Fun</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Jigsaw','https://www.jigsawplanet.com/?rc=play&pid=2b3d8e6f4a5c')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <!-- CARDS -->
+    <div class="gcard rv" data-g="cards" data-n="solitaire klondike patience"><div class="badge-live">HOT</div><div class="gcard-thumb ge">🃏</div><div class="gcard-body"><div class="gcard-genre">Cards</div><div class="gcard-title">Solitaire</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>All-time classic</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Solitaire','https://playpager.com/embed/solitaire/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="cards" data-n="blackjack 21 casino dealer"><div class="gcard-thumb gf">🎰</div><div class="gcard-body"><div class="gcard-genre">Cards</div><div class="gcard-title">Blackjack 21</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Beat the dealer</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Blackjack','https://www.blackjackdoc.com/play-blackjack/blackjack-game/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="cards" data-n="spider solitaire two suit"><div class="gcard-thumb gg">🕷️</div><div class="gcard-body"><div class="gcard-genre">Cards</div><div class="gcard-title">Spider Solitaire</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>2-suit challenge</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Spider Solitaire','https://www.spidersolitaire.com/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <!-- WORD -->
+    <div class="gcard rv" data-g="word" data-n="word puzzle find letters search"><div class="badge-live">HOT</div><div class="gcard-thumb gh">🔤</div><div class="gcard-body"><div class="gcard-genre">Word</div><div class="gcard-title">Word Puzzle</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Find the words</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Word Puzzle','https://playpager.com/embed/wordpuzzle/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="word" data-n="wordle daily guess word letters"><div class="gcard-thumb ga">🟩</div><div class="gcard-body"><div class="gcard-genre">Word</div><div class="gcard-title">Wordle</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Daily word game</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Wordle','https://www.nytimes.com/games/wordle/index.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="word" data-n="crossword clues fill answer"><div class="gcard-thumb gb">✏️</div><div class="gcard-body"><div class="gcard-genre">Word</div><div class="gcard-title">Crossword</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Daily puzzles</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Crossword','https://www.crosswordlabs.com/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <!-- ARCADE -->
+    <div class="gcard rv" data-g="arcade" data-n="snake classic grow eat food"><div class="gcard-thumb gc">🐍</div><div class="gcard-body"><div class="gcard-genre">Arcade</div><div class="gcard-title">Snake Classic</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>104K plays</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Snake','https://playsnake.org/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="arcade" data-n="pacman pac-man ghost maze eat"><div class="badge-live">HOT</div><div class="gcard-thumb gd">👾</div><div class="gcard-body"><div class="gcard-genre">Arcade</div><div class="gcard-title">Pac-Man</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Classic Maze</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Pac-Man','https://www.google.com/logos/2010/pacman10-i.html')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="arcade" data-n="flappy bird tap fly pipes"><div class="gcard-thumb ge">🐦</div><div class="gcard-body"><div class="gcard-genre">Arcade</div><div class="gcard-title">Flappy Bird</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Tap & Fly</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Flappy Bird','https://flappybird.io/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="arcade" data-n="tic tac toe noughts crosses xo"><div class="gcard-thumb gf">✖️</div><div class="gcard-body"><div class="gcard-genre">Arcade</div><div class="gcard-title">Tic-Tac-Toe</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Classic X & O</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Tic-Tac-Toe','https://playtictactoe.org/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="arcade" data-n="dino runner chrome dinosaur jump"><div class="gcard-thumb gg">🦕</div><div class="gcard-body"><div class="gcard-genre">Arcade</div><div class="gcard-title">Dino Runner</div><div class="gcard-meta"><span class="gcard-stars">★★★★★</span><span>Endless Run</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Dino Runner','https://chromedino.com/')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <!-- ACTION -->
+    <div class="gcard rv" data-g="action" data-n="zombie tower defense sector"><div class="badge-new">NEW</div><div class="gcard-thumb gh">🧟</div><div class="gcard-body"><div class="gcard-genre">Action</div><div class="gcard-title">Zombie Defense</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Tower Defense</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Zombie Defense','https://idev.games/embed/zombie-tower-defense-z-sector')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="action" data-n="platformer run jump obstacle"><div class="gcard-thumb ga">🏃</div><div class="gcard-body"><div class="gcard-genre">Action</div><div class="gcard-title">Platformer</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Run & Jump</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Platformer','https://idev.games/embed/horrible-platformer')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+
+    <div class="gcard rv" data-g="action" data-n="vampire land dark adventure fight"><div class="gcard-thumb gb">🧛</div><div class="gcard-body"><div class="gcard-genre">Action</div><div class="gcard-title">Vampire Land</div><div class="gcard-meta"><span class="gcard-stars">★★★★☆</span><span>Dark Adventure</span></div><div class="gcard-footer"><button class="btn btn-lime" onclick="launchGame('Vampire Land','https://idev.games/embed/vampire-land')">▶ Play</button><button class="wish" onclick="wishlist(this)">♡</button></div></div></div>
+  </div>
+
+  <div style="text-align:center;margin-top:2.5rem">
+    <button class="btn btn-ghost btn-xl" onclick="toast('🎮 More games added weekly! Sign up for alerts.')">More Games Coming →</button>
+  </div>
+</section>
+
+<!-- ══════════ HOW IT WORKS ══════════ -->
+<section class="section" id="create">
+  <div style="text-align:center;margin-bottom:4rem">
+    <div class="section-label" style="justify-content:center">The Process</div>
+    <h2 class="section-h" style="text-align:center">HOW IT<br><span style="color:var(--lime)">WORKS</span></h2>
+    <p class="section-sub" style="margin:0 auto">From blank canvas to global launch in minutes, not months.</p>
+  </div>
+  <div class="how-wrap">
+    <div class="how-steps">
+      <div class="hstep rv"><div class="hstep-num">01</div><div class="hstep-icon">✍️</div><h3>Design</h3><p>Drag-and-drop game builder. Create levels, mechanics, and art. No coding needed.</p></div>
+      <div class="hstep rv"><div class="hstep-num">02</div><div class="hstep-icon">🚀</div><h3>Publish</h3><p>One click deploys globally. Your game is live in under 10 seconds on our CDN.</p></div>
+      <div class="hstep rv"><div class="hstep-num">03</div><div class="hstep-icon">👾</div><h3>Players Join</h3><p>Get discovered in our marketplace with 2.4M active players browsing daily.</p></div>
+      <div class="hstep rv"><div class="hstep-num">04</div><div class="hstep-icon">💰</div><h3>Earn Money</h3><p>Monetize through ads, items, and subscriptions. Get paid every month.</p></div>
+    </div>
+    <div style="text-align:center;margin-top:3.5rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="creator.html" class="btn btn-lime btn-xl">Open Game Creator →</a>
+      <a href="earnings.html" class="btn btn-ghost btn-xl">View Earnings Dashboard</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ COMMUNITY ══════════ -->
+<section style="position:relative;z-index:2" id="community">
+  <div class="comm-split">
+    <div class="comm-left-panel">
+      <div class="section-label">Community</div>
+      <h2 class="section-h">JOIN THE<br>BATTLE</h2>
+      <p class="section-sub" style="margin-bottom:2rem">Millions of gamers and creators building the future of browser gaming.</p>
+      <div class="comm-cta">
+        <button class="btn" style="background:var(--ink);color:var(--lime);font-size:.78rem;padding:.7rem 1.4rem" onclick="toast('💬 Discord link coming soon!')">💬 Discord — 500K+</button>
+        <button class="btn" style="background:rgba(6,6,10,0.2);color:var(--ink);border:1px solid rgba(6,6,10,0.3);font-size:.78rem" onclick="toast('🏆 Tournaments launching soon!')">🏆 Tournaments</button>
+      </div>
+    </div>
+    <div class="comm-right-panel">
+      <div class="comm-card rv"><span class="comm-icon">🏆</span><div><h4>Tournaments</h4><p>Weekly competitions with real cash prizes and global leaderboards.</p></div></div>
+      <div class="comm-card rv"><span class="comm-icon">💬</span><div><h4>Discord</h4><p>Chat with 500K+ players and creators in our active Discord server.</p></div></div>
+      <div class="comm-card rv"><span class="comm-icon">📺</span><div><h4>Live Streams</h4><p>Go live or watch top creators play in real-time, right here on platform.</p></div></div>
+      <div class="comm-card rv"><span class="comm-icon">🎨</span><div><h4>Game Jams</h4><p>Monthly 48-hour creation challenges with themes, prizes & community voting.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PRICING ══════════ -->
+<section class="section section-bg2" id="pricing">
+  <div style="text-align:center">
+    <div class="section-label" style="justify-content:center">Pricing</div>
+    <h2 class="section-h" style="text-align:center">SIMPLE <span style="color:var(--lime)">PLANS</span></h2>
+    <p class="section-sub" style="margin:0 auto">Start free forever. Scale when you're ready.</p>
+  </div>
+  <div class="pricing-wrap">
+    <div class="pcard rv">
+      <div class="pcard-name">Starter</div>
+      <div class="pcard-price">$0</div>
+      <div class="pcard-period">forever free</div>
+      <ul class="pcard-feats">
+        <li><span class="ck">✓</span>3 published games</li>
+        <li><span class="ck">✓</span>1,000 plays / month</li>
+        <li><span class="ck">✓</span>All 24 games to play</li>
+        <li><span class="ck">✓</span>Community access</li>
+      </ul>
+      <button class="btn btn-block" onclick="openModal('signup')">Get Started Free</button>
+    </div>
+    <div class="pcard hot rv">
+      <div class="pcard-tag">Most Popular</div>
+      <div class="pcard-name">Pro</div>
+      <div class="pcard-price">$12</div>
+      <div class="pcard-period">per month</div>
+      <ul class="pcard-feats">
+        <li><span class="ck">✓</span>Unlimited games</li>
+        <li><span class="ck">✓</span>Unlimited plays</li>
+        <li><span class="ck">✓</span>Full monetization</li>
+        <li><span class="ck">✓</span>Priority support</li>
+        <li><span class="ck">✓</span>Advanced analytics</li>
+      </ul>
+      <button class="btn btn-block" onclick="openUpgrade('pro')">Start Pro — $12/mo</button>
+    </div>
+    <div class="pcard rv">
+      <div class="pcard-name">Studio</div>
+      <div class="pcard-price">$49</div>
+      <div class="pcard-period">per month</div>
+      <ul class="pcard-feats">
+        <li><span class="ck">✓</span>Everything in Pro</li>
+        <li><span class="ck">✓</span>Team collaboration</li>
+        <li><span class="ck">✓</span>Custom domain</li>
+        <li><span class="ck">✓</span>White-label</li>
+        <li><span class="ck">✓</span>90% revenue share</li>
+      </ul>
+      <button class="btn btn-block" onclick="openUpgrade('studio')">Go Studio — $49/mo</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TESTIMONIALS ══════════ -->
+<section class="section section-bg3">
+  <div style="text-align:center;margin-bottom:0">
+    <div class="section-label" style="justify-content:center">Players Love It</div>
+    <h2 class="section-h" style="text-align:center">REAL <span style="color:var(--coral)">REVIEWS</span></h2>
+  </div>
+  <div class="tgrid">
+    <div class="tcard rv"><p>"Built my first game in 2 hours, published it, and had 500 players by morning. Absolutely insane platform."</p><div class="tcard-author"><div class="tcard-av" style="background:linear-gradient(135deg,var(--lime),#2a5000)">A</div><div><div class="tcard-name">Alex Rivera</div><div class="tcard-role">Indie Dev · Pro Plan</div></div></div></div>
+    <div class="tcard rv"><p>"Lag-free is not just marketing. I've tried 5 other platforms — nothing comes close to the performance here."</p><div class="tcard-author"><div class="tcard-av" style="background:linear-gradient(135deg,var(--coral),#5c0020)">S</div><div><div class="tcard-name">Sofia Chen</div><div class="tcard-role">Competitive Gamer</div></div></div></div>
+    <div class="tcard rv"><p>"Making $800/month from my GoGo games. The monetization tools are exceptional. Studio plan paid for itself in week 1."</p><div class="tcard-author"><div class="tcard-av" style="background:linear-gradient(135deg,var(--gold),#5c3a00)">M</div><div><div class="tcard-name">Marcus Johnson</div><div class="tcard-role">Creator · Studio Plan</div></div></div></div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <span class="footer-brand-name">GOGO.</span>
+      <p>The lag-free gaming platform for creators and players worldwide. 24 real browser games, a full game creator, and real earnings.</p>
+      <button class="btn btn-lime btn-xl" onclick="openModal('signup')">Get Started Free →</button>
+    </div>
+    <div class="footer-col"><h5>Platform</h5><ul><li><a href="#games">Play Games</a></li><li><a href="creator.html">Create Games</a></li><li><a href="earnings.html">Earnings</a></li><li><a href="#pricing">Pricing</a></li></ul></div>
+    <div class="footer-col"><h5>Company</h5><ul><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li><li><a href="#">Press</a></li></ul></div>
+    <div class="footer-col"><h5>Legal</h5><ul><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#">Cookies</a></li><li><a href="#">Contact</a></li></ul></div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 GoGo Games — Built for creators, by creators.</p>
+    <div class="footer-status"><div class="status-dot"></div><p>All systems operational</p></div>
+  </div>
+</footer>
+
+<!-- ══════════ GAME PLAYER ══════════ -->
+<div class="player-ov" id="player">
+  <div class="player-hd">
+    <span class="player-title" id="ptitle">Game</span>
+    <div style="display:flex;gap:.7rem;align-items:center">
+      <button class="btn btn-ghost" onclick="doFS()" style="font-size:.68rem">⛶ Fullscreen</button>
+      <div class="player-x" onclick="closePlayer()">✕</div>
+    </div>
+  </div>
+  <div class="player-bd">
+    <div class="player-loading" id="ploader">
+      <div class="spin-ring"></div>
+      <div class="spin-label">LOADING GAME</div>
+    </div>
+    <iframe id="pframe" src="" allowfullscreen allow="gamepad *" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock" style="display:none;width:100%;height:100%;border:none"></iframe>
+  </div>
+</div>
+
+<!-- ══════════ MODAL ══════════ -->
+<div class="modal-ov" id="modal-ov" onclick="bgClose(event)">
+  <div class="modal-box"><div class="modal-x" onclick="closeModal()">✕</div><div id="mbody"></div></div>
+</div>
+
+<!-- ══════════ TOAST ══════════ -->
+<div class="toast" id="toast-el"></div>
+
+<script>
+// ══════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════
+const SB_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+const SB_ANON = 'YOUR_SUPABASE_ANON_KEY';
+const STR_PK  = 'pk_test_YOUR_STRIPE_KEY';
+const PAYMENT_LINKS = {
+  pro: 'STRIPE_PRO_PAYMENT_LINK',
+  studio: 'STRIPE_STUDIO_PAYMENT_LINK'
+};
+
+const sb = window.supabase.createClient(SB_URL, SB_ANON);
+const stripe = STR_PK.includes('YOUR_STRIPE_KEY') ? null : Stripe(STR_PK);
+let user=null, prof=null, plays=0, scard=null, selPlan='pro';
+
+// ── AUTH ──
+sb.auth.onAuthStateChange(async(_,session)=>{
+  user=session?.user||null;
+  if(user){
+    const{data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    prof=data||{};
+    navIn(); dashIn();
+    document.getElementById('dashboard').classList.add('on');
+  } else {
+    prof=null;
+    document.getElementById('nav-auth').style.display='flex';
+    document.getElementById('nav-user').classList.remove('on');
+    document.getElementById('dashboard').classList.remove('on');
+  }
+});
+
+function getPlan(){return prof?.plan||'free';}
+
+function navIn(){
+  document.getElementById('nav-auth').style.display='none';
+  document.getElementById('nav-user').classList.add('on');
+  const u=prof?.username||user.email.split('@')[0];
+  document.getElementById('nav-av').textContent=u[0].toUpperCase();
+  const p=getPlan(), pi=document.getElementById('npill');
+  pi.textContent=p.charAt(0).toUpperCase()+p.slice(1);
+  pi.className=`pill pill-${p}`;
+}
+
+function dashIn(){
+  const u=prof?.username||user.email.split('@')[0];
+  document.getElementById('dname').textContent=u.toUpperCase();
+  document.getElementById('de').textContent=user.email;
+  const p=getPlan();
+  document.getElementById('dp').textContent=p.charAt(0).toUpperCase()+p.slice(1);
+  const dp=document.getElementById('dpill');
+  dp.textContent=p==='free'?'Starter':p.charAt(0).toUpperCase()+p.slice(1);
+  dp.className=`pill pill-${p}`;
+  document.getElementById('dpl').textContent=plays;
+  document.getElementById('ds').textContent=new Date(user.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+}
+
+async function doSignup(){
+  const u=v('su-u'),e=v('su-e'),p=v('su-p'),err=document.getElementById('su-err');
+  err.classList.remove('on');
+  if(!u||!e||!p){err.textContent='Fill all fields.';err.classList.add('on');return;}
+  if(p.length<6){err.textContent='Password: 6+ chars.';err.classList.add('on');return;}
+  setBtn('su-btn',true,'Creating...');
+  const{data,error}=await sb.auth.signUp({email:e,password:p,options:{data:{username:u}}});
+  if(error){err.textContent=error.message;err.classList.add('on');setBtn('su-btn',false,'Sign Up Free');return;}
+  if(data.user)await sb.from('profiles').upsert({id:data.user.id,username:u,email:e,plan:'free'});
+  closeModal();toast('🎉 Welcome! Check email to verify.');
+}
+
+async function doLogin(){
+  const e=v('li-e'),p=v('li-p'),err=document.getElementById('li-err');
+  err.classList.remove('on');
+  if(!e||!p){err.textContent='Enter email & password.';err.classList.add('on');return;}
+  setBtn('li-btn',true,'Logging in...');
+  const{error}=await sb.auth.signInWithPassword({email:e,password:p});
+  if(error){err.textContent=error.message;err.classList.add('on');setBtn('li-btn',false,'Login');return;}
+  closeModal();toast('⚡ Welcome back!');
+}
+
+async function doLogout(){await sb.auth.signOut();toast('👋 See you next time!');}
+
+async function openUpgrade(plan){
+  if(!user){openModal('signup');toast('⚠ Create an account first!');return;}
+  selPlan=plan;openModal('upgrade');
+}
+
+function mountStripe(){
+  const els=stripe.elements({appearance:{theme:'night',variables:{colorPrimary:'#c8ff00',colorBackground:'#0c0c14',fontFamily:'Space Grotesk,sans-serif',borderRadius:'10px'}}});
+  scard=els.create('card');scard.mount('#sce');
+  scard.on('change',e=>{document.getElementById('serr').textContent=e.error?e.error.message:'';});
+}
+
+async function doPay(){
+  const btn=document.getElementById('pay-btn');
+  const link = PAYMENT_LINKS[selPlan];
+  if(!link || link.includes('STRIPE_')){
+    document.getElementById('serr').textContent='Add your Stripe Payment Link in the CONFIG section first.';
+    return;
+  }
+  btn.disabled=true;btn.textContent='Opening Stripe...';
+  const joiner = link.includes('?') ? '&' : '?';
+  window.open(`${link}${joiner}prefilled_email=${encodeURIComponent(user.email)}`, '_blank', 'noopener');
+  toast('🔒 Stripe checkout opened. Use the same account email.');
+  closeModal();
+}
+
+// ── GAME PLAYER ──
+function launchGame(name,url){
+  const ov=document.getElementById('player'),fr=document.getElementById('pframe'),ld=document.getElementById('ploader');
+  document.getElementById('ptitle').textContent=name;
+  ov.classList.add('on');ld.style.display='flex';fr.style.display='none';
+  fr.src=url;
+  fr.onload=()=>{ld.style.display='none';fr.style.display='block';};
+  setTimeout(()=>{
+    if(ld.style.display!=='none'){
+      ld.innerHTML=`<div style="text-align:center;padding:2rem;max-width:360px">
+        <div style="font-size:3.5rem;margin-bottom:1.5rem">🎮</div>
+        <h3 style="font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:2px;color:var(--lime);margin-bottom:.8rem">${name}</h3>
+        <p style="color:var(--dim);margin-bottom:2rem;line-height:1.6;font-size:.9rem">This game needs to open in a new tab due to browser security settings.</p>
+        <a href="${url}" target="_blank" rel="noopener" class="btn btn-lime btn-xl" style="text-decoration:none;display:inline-flex">Open in New Tab ↗</a>
+      </div>`;
+    }
+  },4000);
+  plays++;if(user)document.getElementById('dpl').textContent=plays;
+  document.body.style.overflow='hidden';
+}
+
+function closePlayer(){
+  const ov=document.getElementById('player'),fr=document.getElementById('pframe'),ld=document.getElementById('ploader');
+  ov.classList.remove('on');fr.src='';fr.style.display='none';
+  ld.innerHTML='<div class="spin-ring"></div><div class="spin-label">LOADING GAME</div>';
+  ld.style.display='flex';document.body.style.overflow='';
+}
+
+function doFS(){
+  const el=document.getElementById('player');
+  if(!document.fullscreenElement)el.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
+
+// ── FILTER & SEARCH ──
+function filterG(genre,btn){
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.gcard').forEach(c=>{
+    c.style.display=(genre==='all'||c.dataset.g===genre)?'':'none';
+  });
+}
+function gsearch(q){
+  const lq=q.toLowerCase().trim();
+  document.querySelectorAll('.gcard').forEach(c=>{
+    c.style.display=(!lq||c.dataset.n.includes(lq))?'':'none';
+  });
+  if(lq)document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
+}
+function wishlist(btn){
+  btn.classList.toggle('on');
+  btn.textContent=btn.classList.contains('on')?'♥':'♡';
+  if(btn.classList.contains('on'))toast('❤️ Added to wishlist!');
+}
+
+// ── MODALS ──
+function openModal(type){
+  let html='';
+  if(type==='login'){
+    html=`<h2>Welcome <span style="color:var(--lime)">Back</span></h2>
+    <p class="modal-sub">Log in to your GoGo Games account.</p>
+    <div class="field"><label>Email</label><input id="li-e" type="email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input id="li-p" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="ferr" id="li-err"></div>
+    <button id="li-btn" class="btn btn-lime btn-block" onclick="doLogin()">Login</button>
+    <p class="msw">No account? <a onclick="openModal('signup')">Sign up free →</a></p>`;
+  } else if(type==='signup'){
+    html=`<h2>Join <span style="color:var(--lime)">GoGo</span></h2>
+    <p class="modal-sub">2.4M+ players and creators. Join them.</p>
+    <div class="field"><label>Username</label><input id="su-u" type="text" placeholder="CoolGamer99" autocomplete="username"></div>
+    <div class="field"><label>Email</label><input id="su-e" type="email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="field"><label>Password (6+ chars)</label><input id="su-p" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+    <div class="ferr" id="su-err"></div>
+    <button id="su-btn" class="btn btn-lime btn-block" onclick="doSignup()">Sign Up Free</button>
+    <p class="msw">Have account? <a onclick="openModal('login')">Log in →</a></p>`;
+  } else if(type==='upgrade'){
+    const lbl=selPlan==='pro'?'Pro — $12/month':'Studio — $49/month';
+    const desc=selPlan==='pro'?'Unlimited games, monetization & priority support.':'Full studio power, team collab & 90% revenue share.';
+    html=`<h2>Upgrade to <span style="color:var(--lime)">${selPlan==='pro'?'Pro':'Studio'}</span></h2>
+    <p class="modal-sub">${desc}</p>
+    <div class="field"><label>Secure checkout</label>
+    <p style="color:var(--dim);line-height:1.55;margin:0">You will be sent to your Stripe Payment Link. Put the live link in the CONFIG section before launch.</p>
+    <div id="serr"></div></div>
+    <button id="pay-btn" class="btn btn-lime btn-block" onclick="doPay()">Open Stripe Checkout — ${lbl}</button>
+    <p style="color:var(--dim);font-size:.72rem;text-align:center;margin-top:.9rem;font-family:var(--ff-mono)">🔒 Secured by Stripe · Plan unlock should be automated later with a webhook</p>`;
+  } else if(type==='account'){
+    html=`<h2>My <span style="color:var(--lime)">Account</span></h2>
+    <p class="modal-sub">${user?.email||''}</p>
+    <div style="display:grid;gap:.9rem;margin:1.3rem 0">
+      <div class="dcard"><div class="dcard-l">Plan</div><div class="dcard-v">${getPlan().toUpperCase()}</div></div>
+      <div class="dcard"><div class="dcard-l">Games Played</div><div class="dcard-v">${plays}</div></div>
+    </div>
+    <a href="earnings.html" class="btn btn-lime btn-block" style="text-align:center">💰 Earnings Dashboard</a>
+    <a href="creator.html" class="btn btn-ghost btn-block" style="text-align:center;margin-top:.6rem">✏ Game Creator</a>
+    <button class="btn btn-block" style="margin-top:.6rem;background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--coral)" onclick="closeModal();doLogout()">Logout</button>`;
+  }
+  document.getElementById('mbody').innerHTML=html;
+  document.getElementById('modal-ov').classList.add('on');
+}
+
+function closeModal(){
+  document.getElementById('modal-ov').classList.remove('on');
+  if(scard){try{scard.destroy();}catch(e){}scard=null;}
+}
+function bgClose(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+
+// ── TOAST ──
+function toast(msg,err=false){
+  const t=document.getElementById('toast-el');
+  t.textContent=msg;t.className='toast'+(err?' err':'');
+  t.classList.add('on');clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('on'),3800);
+}
+
+function v(id){return document.getElementById(id)?.value.trim();}
+function setBtn(id,on,label){const b=document.getElementById(id);if(b){b.disabled=on;b.textContent=label;}}
+
+// ── CURSOR ──
+const cur=document.getElementById('cursor'), trail=document.getElementById('cursor-trail');
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function animTrail(){trail.style.left=mx+'px';trail.style.top=my+'px';requestAnimationFrame(animTrail);})();
+
+// ── PARTICLES ──
+(function(){
+  const cv=document.getElementById('particle-canvas'),ctx=cv.getContext('2d');
+  let W,H,pts=[];
+  const resize=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight;};
+  window.addEventListener('resize',resize);resize();
+  class P{
+    reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.life=Math.random();this.r=Math.random()*1.2+.3;const t=Math.random();this.col=t<.5?'200,255,0':t<.8?'255,77,109':'0,212,255';}
+    constructor(){this.reset();}
+    update(){this.x+=this.vx;this.y+=this.vy;this.life-=.0007;if(this.life<=0||this.x<0||this.x>W||this.y<0||this.y>H)this.reset();}
+    draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(${this.col},${Math.min(this.life,.6)})`;ctx.fill();}
+  }
+  for(let i=0;i<80;i++)pts.push(new P());
+  const loop=()=>{
+    ctx.clearRect(0,0,W,H);
+    for(let i=0;i<pts.length;i++){for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<100){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(200,255,0,${(1-d/100)*.05})`;ctx.lineWidth=.5;ctx.stroke();}}}
+    pts.forEach(p=>{p.update();p.draw();});
+    requestAnimationFrame(loop);
+  };loop();
+})();
+
+// ── SCROLL REVEAL ──
+const io=new IntersectionObserver(es=>{
+  es.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('vi'),i*80);});
+},{threshold:.07});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+// ── COUNT-UP (hero stats + belt) ──
+const sio=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target.querySelector('[data-t]');
+    if(!el||el.dataset.done)return;
+    el.dataset.done='1';
+    const target=parseInt(el.dataset.t);
+    let cur=0;const step=target/70;
+    const iv=setInterval(()=>{
+      cur=Math.min(cur+step,target);
+      if(target>=1000)el.textContent=Math.round(cur/1000)+'K+';
+      else if(target===999)el.textContent=(cur/10).toFixed(1);
+      else el.textContent=Math.round(cur);
+      if(cur>=target)clearInterval(iv);
+    },16);
+    // Also animate hero stats inline
+    document.querySelectorAll('.hstat-n[data-t]').forEach(n=>{
+      if(n.dataset.done2)return;n.dataset.done2='1';
+      const t2=parseInt(n.dataset.t);let c2=0;const s2=t2/60;
+      const iv2=setInterval(()=>{c2=Math.min(c2+s2,t2);if(t2>=1000)n.textContent=Math.round(c2/1000)+'K';else n.textContent=Math.round(c2);if(c2>=t2)clearInterval(iv2);},18);
+    });
+  });
+},{threshold:.3});
+document.querySelectorAll('.sbi,.hstat').forEach(el=>sio.observe(el));
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closePlayer();}});
+</script>
+</body>
+</html>

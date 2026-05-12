@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Page not found.">
+<meta name="theme-color" content="#c8ff00">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<meta property="og:title" content="404 — GoGo Games">
+<meta property="og:description" content="Page not found.">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — GoGo Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--lime:#c8ff00;--bg:#050508;--dim:#6b7280;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:#f0f0f8;font-family:'Space Grotesk',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(200,255,0,0.04),transparent);pointer-events:none;}
+.num{font-family:'Bebas Neue',cursive;font-size:clamp(8rem,20vw,16rem);line-height:1;-webkit-text-stroke:2px rgba(200,255,0,0.3);-webkit-text-fill-color:transparent;margin-bottom:1rem;animation:flicker 3s ease-in-out infinite;position:relative;}
+.num::before,.num::after{content:'404';position:absolute;top:0;left:0;right:0;font-family:'Bebas Neue',cursive;font-size:inherit;}
+.num::before{-webkit-text-stroke:2px rgba(255,77,109,0.35);-webkit-text-fill-color:transparent;animation:glitch1 4s infinite;}
+.num::after{-webkit-text-stroke:2px rgba(0,212,255,0.35);-webkit-text-fill-color:transparent;animation:glitch2 4s infinite;}
+h1{font-family:'Bebas Neue',cursive;font-size:clamp(1.8rem,4vw,3rem);letter-spacing:3px;margin-bottom:1rem;}
+p{color:var(--dim);font-size:1rem;line-height:1.7;max-width:400px;margin:0 auto 2.5rem;}
+.btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+.btn{font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;border-radius:8px;padding:.65rem 1.5rem;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;transition:all .2s;}
+.btn-lime{background:var(--lime);color:#050508;font-weight:700;}
+.btn-lime:hover{background:#d4ff33;transform:translateY(-1px);box-shadow:0 0 24px rgba(200,255,0,0.3);}
+.btn-ghost{background:transparent;border:1px solid rgba(200,255,0,0.25);color:#f0f0f8;}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime);}
+@keyframes flicker{0%,89%,91%,96%,100%{opacity:1}90%{opacity:.3}97%{opacity:.7}}
+@keyframes glitch1{0%,90%,100%{clip-path:inset(0 0 100% 0);transform:translate(0)}91%{clip-path:inset(15% 0 65% 0);transform:translate(-3px,-2px)}93%{clip-path:inset(55% 0 25% 0);transform:translate(3px,2px)}95%{clip-path:inset(0 0 100% 0)}}
+@keyframes glitch2{0%,88%,100%{clip-path:inset(0 0 100% 0);transform:translate(0)}89%{clip-path:inset(35% 0 45% 0);transform:translate(3px,-2px)}92%{clip-path:inset(75% 0 15% 0);transform:translate(-3px,2px)}94%{clip-path:inset(0 0 100% 0)}}
+</style>
+</head>
+<body>
+<div class="num">404</div>
+<h1>PAGE NOT FOUND</h1>
+<p>Looks like this level doesn't exist yet. Head back to the lobby and keep playing.</p>
+<div class="btns">
+  <a href="index.html" class="btn btn-lime">🏠 Back to Home</a>
+  <a href="index.html#games" class="btn btn-ghost">🎮 Play Games</a>
+</div>
+</body>
+</html>
