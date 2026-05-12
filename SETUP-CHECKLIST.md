@@ -9,9 +9,9 @@
 5. Copy:
    - Project URL
    - anon public key
-6. Replace these in `index.html`:
-   - `https://YOUR_PROJECT_ID.supabase.co`
-   - `YOUR_SUPABASE_ANON_KEY`
+6. Add them to `config.js`:
+   - `supabaseUrl`
+   - `supabaseAnonKey`
 
 ## 2. Stripe
 
@@ -20,10 +20,10 @@ Use Stripe Payment Links for the fastest static-site launch.
 1. Create product: `GoGo Pro`, recurring, `$12/month`.
 2. Create product: `GoGo Studio`, recurring, `$49/month`.
 3. For each product, create a Payment Link.
-4. Replace these in `index.html`:
-   - `STRIPE_PRO_PAYMENT_LINK`
-   - `STRIPE_STUDIO_PAYMENT_LINK`
-5. Optional: replace `pk_test_YOUR_STRIPE_KEY` with your publishable key.
+4. Add them to `config.js`:
+   - `paymentLinks.pro`
+   - `paymentLinks.studio`
+5. Optional: add your publishable key to `stripePublishableKey`.
 
 Important: Payment Links can collect money immediately, but automatic plan unlocking needs a Stripe webhook or Netlify Function later.
 

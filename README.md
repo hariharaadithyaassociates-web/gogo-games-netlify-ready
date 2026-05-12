@@ -14,9 +14,9 @@
 ### 1. Supabase (Auth + Database) — Free
 1. Go to https://supabase.com → New Project
 2. Copy **Project URL** and **Anon Key**
-3. Open each HTML file and replace:
-   - `https://YOUR_PROJECT_ID.supabase.co` → your URL
-   - `YOUR_SUPABASE_ANON_KEY` → your key
+3. Open `config.js` and set:
+   - `supabaseUrl` → your Project URL
+   - `supabaseAnonKey` → your anon public key
 4. Run this SQL in Supabase SQL Editor:
 
 ```sql
@@ -41,10 +41,10 @@ CREATE POLICY "update_own" ON profiles FOR UPDATE USING (auth.uid() = id);
 3. Create **GoGo Studio** → $49/month recurring
 4. Create a Payment Link for each product
 5. Optional: Developers → API Keys → copy Publishable Key
-6. In `index.html` replace:
-   - `STRIPE_PRO_PAYMENT_LINK` → Pro Payment Link URL
-   - `STRIPE_STUDIO_PAYMENT_LINK` → Studio Payment Link URL
-   - `pk_test_YOUR_STRIPE_KEY` → your publishable key, optional
+6. In `config.js` set:
+   - `paymentLinks.pro` → Pro Payment Link URL
+   - `paymentLinks.studio` → Studio Payment Link URL
+   - `stripePublishableKey` → your publishable key, optional
 
 ### 3. Deploy to Netlify — Free
 1. Go to https://netlify.com → Add new site → Deploy manually

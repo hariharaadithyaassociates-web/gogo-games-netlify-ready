@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Clash+Display:wght@400;500;600;700&family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
+<script src="config.js"></script>
 <style>
 /* ═══════════════════════════════════════════
    ROOT & RESET
@@ -1218,16 +1219,95 @@ footer {
 // ══════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════
-const SB_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
-const SB_ANON = 'YOUR_SUPABASE_ANON_KEY';
-const STR_PK  = 'pk_test_YOUR_STRIPE_KEY';
-const PAYMENT_LINKS = {
-  pro: 'STRIPE_PRO_PAYMENT_LINK',
-  studio: 'STRIPE_STUDIO_PAYMENT_LINK'
-};
+const GOGO_CONFIG = window.GOGO_CONFIG || {};
+const SB_URL  = GOGO_CONFIG.supabaseUrl || '';
+const SB_ANON = GOGO_CONFIG.supabaseAnonKey || '';
+const STR_PK  = GOGO_CONFIG.stripePublishableKey || '';
+const PAYMENT_LINKS = GOGO_CONFIG.paymentLinks || { pro: '', studio: '' };
+const HAS_SUPABASE = /^https:\/\/.+\.supabase\.co$/.test(SB_URL) && SB_ANON.length > 20;
 
-const sb = window.supabase.createClient(SB_URL, SB_ANON);
-const stripe = STR_PK.includes('YOUR_STRIPE_KEY') ? null : Stripe(STR_PK);
+function createDemoSupabase(){
+  const listeners = [];
+  const key = 'gogo_demo_session';
+  const profileKey = 'gogo_demo_profiles';
+  const readProfiles = () => JSON.parse(localStorage.getItem(profileKey) || '{}');
+  const writeProfiles = profiles => localStorage.setItem(profileKey, JSON.stringify(profiles));
+  const session = () => JSON.parse(localStorage.getItem(key) || 'null');
+  const notify = value => listeners.forEach(cb => cb('SIGNED_IN', value));
+  const makeUser = (email, username) => ({
+    id: 'demo-' + btoa(email).replace(/=+$/,'').replace(/[^a-zA-Z0-9]/g,''),
+    email,
+    created_at: new Date().toISOString(),
+    user_metadata: { username }
+  });
+  return {
+    auth: {
+      onAuthStateChange(cb){
+        listeners.push(cb);
+        setTimeout(() => cb('INITIAL_SESSION', session()), 0);
+        return { data: { subscription: { unsubscribe(){} } } };
+      },
+      async signUp({ email, password, options }){
+        if(!email || !password) return { data: {}, error: { message: 'Email and password required.' } };
+        const user = makeUser(email, options?.data?.username || email.split('@')[0]);
+        const profiles = readProfiles();
+        profiles[user.id] = profiles[user.id] || { id:user.id, username:user.user_metadata.username, email, plan:'free', created_at:user.created_at };
+        writeProfiles(profiles);
+        const value = { user };
+        localStorage.setItem(key, JSON.stringify(value));
+        notify(value);
+        return { data: { user }, error: null };
+      },
+      async signInWithPassword({ email, password }){
+        if(!email || !password) return { error: { message: 'Email and password required.' } };
+        const profiles = readProfiles();
+        const existing = Object.values(profiles).find(p => p.email === email);
+        const user = existing ? { id: existing.id, email, created_at: existing.created_at } : makeUser(email, email.split('@')[0]);
+        profiles[user.id] = profiles[user.id] || { id:user.id, username:email.split('@')[0], email, plan:'free', created_at:user.created_at };
+        writeProfiles(profiles);
+        const value = { user };
+        localStorage.setItem(key, JSON.stringify(value));
+        notify(value);
+        return { error: null };
+      },
+      async signOut(){
+        localStorage.removeItem(key);
+        listeners.forEach(cb => cb('SIGNED_OUT', null));
+        return { error: null };
+      }
+    },
+    from(table){
+      return {
+        _filters: {},
+        select(){ return this; },
+        eq(k,v){ this._filters[k] = v; return this; },
+        async single(){
+          const profiles = readProfiles();
+          return { data: profiles[this._filters.id] || null, error: null };
+        },
+        async upsert(row){
+          const profiles = readProfiles();
+          profiles[row.id] = { ...(profiles[row.id] || {}), ...row };
+          writeProfiles(profiles);
+          return { data: row, error: null };
+        },
+        update(payload){
+          return {
+            eq: async (k,v) => {
+              const profiles = readProfiles();
+              profiles[v] = { ...(profiles[v] || {}), ...payload };
+              writeProfiles(profiles);
+              return { data: profiles[v], error: null };
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
+const sb = HAS_SUPABASE ? window.supabase.createClient(SB_URL, SB_ANON) : createDemoSupabase();
+const stripe = STR_PK ? Stripe(STR_PK) : null;
 let user=null, prof=null, plays=0, scard=null, selPlan='pro';
 
 // ── AUTH ──
@@ -1309,8 +1389,8 @@ function mountStripe(){
 async function doPay(){
   const btn=document.getElementById('pay-btn');
   const link = PAYMENT_LINKS[selPlan];
-  if(!link || link.includes('STRIPE_')){
-    document.getElementById('serr').textContent='Add your Stripe Payment Link in the CONFIG section first.';
+  if(!link){
+    document.getElementById('serr').textContent='Add your Stripe Payment Link in config.js first.';
     return;
   }
   btn.disabled=true;btn.textContent='Opening Stripe...';
@@ -1401,7 +1481,7 @@ function openModal(type){
     html=`<h2>Upgrade to <span style="color:var(--lime)">${selPlan==='pro'?'Pro':'Studio'}</span></h2>
     <p class="modal-sub">${desc}</p>
     <div class="field"><label>Secure checkout</label>
-    <p style="color:var(--dim);line-height:1.55;margin:0">You will be sent to your Stripe Payment Link. Put the live link in the CONFIG section before launch.</p>
+    <p style="color:var(--dim);line-height:1.55;margin:0">You will be sent to your Stripe Payment Link. Put the live link in config.js before launch.</p>
     <div id="serr"></div></div>
     <button id="pay-btn" class="btn btn-lime btn-block" onclick="doPay()">Open Stripe Checkout — ${lbl}</button>
     <p style="color:var(--dim);font-size:.72rem;text-align:center;margin-top:.9rem;font-family:var(--ff-mono)">🔒 Secured by Stripe · Plan unlock should be automated later with a webhook</p>`;
